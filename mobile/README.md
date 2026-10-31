@@ -75,3 +75,10 @@ mobile/
 ## Приватность и файлы
 
 Приложение открывает системный picker только после нажатия пользователем «Добавить музыку». Выбранные аудиофайлы копируются в `Paths.document` приложения, чтобы доступ к ним сохранялся между перезапусками. Это занимает место во внутреннем хранилище приложения; удаление FoxsMusic удалит и эти копии. Исходные файлы пользователя не изменяются.
+
+
+### Music folder sync (Android)
+
+On the Library screen, choose **Connect Music folder** and select the device's `Music` folder in the Android system folder picker. FoxsMusic stores the granted folder URI and scans that folder (including subfolders) after later launches, importing only files not already in the in-app library. You can select another folder again from the same row. Android requires the user to grant this folder access; the app does not silently scan the whole device.
+
+Audio files selected through the file picker are copied sequentially into FoxsMusic's private Documents storage. This avoids retaining short-lived picker-cache URIs as library entries.

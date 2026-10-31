@@ -17,7 +17,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import * as LegacyFileSystem from 'expo-file-system/legacy';
 import {
   requestNotificationPermissionsAsync,
@@ -28,6 +28,9 @@ import {
 import { createId, formatTime, isSupportedAudio, parseTrackName } from './src/core';
 
 const STORAGE_KEY = 'foxsmusic-mobile-library-v1';
+const MUSIC_FOLDER_KEY = 'foxsmusic-mobile-music-folder-v1';
+const MAX_IMPORT_FILES = 250;
+const MAX_FOLDER_DEPTH = 8;
 const C = {
   background: '#08070A',
   panel: '#141015',
@@ -46,7 +49,7 @@ const COPY = {
   ru: {
     library: 'Библиотека', playlists: 'Плейлисты', player: 'Плеер', settings: 'Настройки',
     edition: 'ANDROID EDITION', collection: 'ТВОЯ МУЗЫКА', localLibrary: 'Локальная библиотека',
-    import: 'Добавить музыку', importHint: 'Выбери аудиофайлы на телефоне', importFolder: 'Добавить папку с музыкой', addedOn: 'Добавлен', search: 'Поиск трека или исполнителя',
+    import: 'Добавить музыку', importHint: 'Выбери аудиофайлы на телефоне', importFolder: 'Подключить папку Music', folderConnected: 'Папка Music подключена · изменить', scanningFolder: 'Сканируем папку Music…', addedOn: 'Добавлен', search: 'Поиск трека или исполнителя',
     all: 'Все', favorites: 'Избранное', tracks: 'треков', noTracks: 'Библиотека пока пуста',
     noTracksHint: 'Добавь музыку с телефона — файлы останутся внутри FoxsMusic.',
     addFirst: 'Выбрать аудиофайлы', unknownArtist: 'Неизвестный исполнитель',
@@ -62,7 +65,7 @@ const COPY = {
     alreadyAdded: 'Этот трек уже есть в плейлисте.', saved: 'Сохранено',
     language: 'Язык интерфейса', storage: 'Хранилище музыки', storageHint: 'Аудиофайлы копируются в приватную папку приложения. Полный доступ ко всем файлам телефона не запрашивается.',
     background: 'Фоновое воспроизведение', backgroundOn: 'Поддерживается через системное медиа-уведомление и экран блокировки.',
-    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.1 · Android MVP',
+    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.2 · Android MVP',
     importDone: 'Импорт завершён', imported: 'Добавлено файлов', skipped: 'Пропущено неподдерживаемых или повторных файлов',
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
@@ -72,7 +75,7 @@ const COPY = {
   en: {
     library: 'Library', playlists: 'Playlists', player: 'Player', settings: 'Settings',
     edition: 'ANDROID EDITION', collection: 'YOUR MUSIC', localLibrary: 'Local library',
-    import: 'Add music', importHint: 'Choose audio files on your phone', importFolder: 'Import music folder', addedOn: 'Added', search: 'Search tracks or artists',
+    import: 'Add music', importHint: 'Choose audio files on your phone', importFolder: 'Connect Music folder', folderConnected: 'Music folder connected · change', scanningFolder: 'Scanning Music folder…', addedOn: 'Added', search: 'Search tracks or artists',
     all: 'All', favorites: 'Favorites', tracks: 'tracks', noTracks: 'Your library is empty',
     noTracksHint: 'Add music from your phone — files stay inside FoxsMusic.',
     addFirst: 'Choose audio files', unknownArtist: 'Unknown artist',
@@ -88,7 +91,7 @@ const COPY = {
     alreadyAdded: 'This track is already in the playlist.', saved: 'Saved',
     language: 'Interface language', storage: 'Music storage', storageHint: 'Audio files are copied into the app private folder. Full access to phone storage is not requested.',
     background: 'Background playback', backgroundOn: 'Supported through the system media notification and lock screen.',
-    supported: 'Supported formats', about: 'About', version: 'Version 0.1.1 · Android MVP',
+    supported: 'Supported formats', about: 'About', version: 'Version 0.1.2 · Android MVP',
     importDone: 'Import complete', imported: 'Files added', skipped: 'Unsupported or duplicate files skipped',
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
@@ -98,7 +101,7 @@ const COPY = {
   de: {
     library: 'Mediathek', playlists: 'Playlists', player: 'Player', settings: 'Einstellungen',
     edition: 'ANDROID EDITION', collection: 'DEINE MUSIK', localLibrary: 'Lokale Mediathek',
-    import: 'Musik hinzufügen', importHint: 'Audiodateien auf dem Smartphone auswählen', importFolder: 'Musikordner hinzufügen', addedOn: 'Hinzugefügt', search: 'Titel oder Interpret suchen',
+    import: 'Musik hinzufügen', importHint: 'Audiodateien auf dem Smartphone auswählen', importFolder: 'Musikordner verbinden', folderConnected: 'Musikordner verbunden · ändern', scanningFolder: 'Musikordner wird durchsucht…', addedOn: 'Hinzugefügt', search: 'Titel oder Interpret suchen',
     all: 'Alle', favorites: 'Favoriten', tracks: 'Titel', noTracks: 'Deine Mediathek ist leer',
     noTracksHint: 'Füge Musik hinzu — die Dateien bleiben in FoxsMusic gespeichert.',
     addFirst: 'Audiodateien auswählen', unknownArtist: 'Unbekannter Interpret',
@@ -114,7 +117,7 @@ const COPY = {
     alreadyAdded: 'Dieser Titel ist bereits in der Playlist.', saved: 'Gespeichert',
     language: 'Oberflächensprache', storage: 'Musikspeicher', storageHint: 'Audiodateien werden in den privaten App-Ordner kopiert. Es wird kein vollständiger Speicherzugriff angefordert.',
     background: 'Hintergrundwiedergabe', backgroundOn: 'Über die System-Medienbenachrichtigung und den Sperrbildschirm verfügbar.',
-    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.1 · Android MVP',
+    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.2 · Android MVP',
     importDone: 'Import abgeschlossen', imported: 'Dateien hinzugefügt', skipped: 'Nicht unterstützte oder doppelte Dateien übersprungen',
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
@@ -174,6 +177,24 @@ function TrackRow({ track, index, active, language, onPlay, onFavorite, onAdd })
   );
 }
 
+function decodeSafPart(value) {
+  try { return decodeURIComponent(String(value || '')); }
+  catch (_) { return String(value || ''); }
+}
+
+function getSafEntryName(uri) {
+  const last = String(uri || '').split('/').filter(Boolean).pop() || '';
+  const decoded = decodeSafPart(last);
+  return decoded.split('/').filter(Boolean).pop() || decoded.split(':').pop() || '';
+}
+
+function getSafFolderName(uri) {
+  const last = String(uri || '').split('/').filter(Boolean).pop() || 'Music';
+  const decoded = decodeSafPart(last);
+  const pathPart = decoded.split('/').filter(Boolean).pop() || decoded;
+  return pathPart.includes(':') ? (pathPart.split(':').pop() || 'Music') : pathPart;
+}
+
 function AppContent() {
   const playlist = useAudioPlaylist({ sources: [], loop: 'none', updateInterval: 500 });
   const playback = useAudioPlaylistStatus(playlist);
@@ -190,6 +211,8 @@ function AppContent() {
   const [repeatMode, setRepeatMode] = useState('none');
   const [shuffle, setShuffle] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [musicFolderUri, setMusicFolderUri] = useState(null);
+  const [folderSyncing, setFolderSyncing] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [playlistModalMode, setPlaylistModalMode] = useState('create');
   const [playlistName, setPlaylistName] = useState('');
@@ -210,22 +233,61 @@ function AppContent() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      let savedTracks = [];
+      let savedFolderUri = null;
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        if (!mounted || !saved || saved.version !== 1) return;
-        const savedTracks = Array.isArray(saved.tracks) ? saved.tracks.filter(item => item && typeof item.id === 'string' && typeof item.uri === 'string') : [];
-        const savedPlaylists = Array.isArray(saved.playlists) ? saved.playlists.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string') : [];
-        setTracks(savedTracks);
-        setPlaylists(savedPlaylists.map(item => ({ ...item, trackIds: Array.isArray(item.trackIds) ? item.trackIds.filter(id => typeof id === 'string') : [] })));
-        setLanguage(['ru', 'en', 'de'].includes(saved.language) ? saved.language : 'ru');
-        setQueueIds(savedTracks.map(item => item.id));
-        if (['none', 'all', 'single'].includes(saved.repeatMode)) setRepeatMode(saved.repeatMode);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved && saved.version === 1) {
+            savedTracks = Array.isArray(saved.tracks)
+              ? saved.tracks.filter(item => item && typeof item.id === 'string' && typeof item.uri === 'string')
+              : [];
+            const savedPlaylists = Array.isArray(saved.playlists)
+              ? saved.playlists.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string')
+              : [];
+            if (mounted) {
+              setTracks(savedTracks);
+              setPlaylists(savedPlaylists.map(item => ({
+                ...item,
+                trackIds: Array.isArray(item.trackIds) ? item.trackIds.filter(id => typeof id === 'string') : [],
+              })));
+              setLanguage(['ru', 'en', 'de'].includes(saved.language) ? saved.language : 'ru');
+              setQueueIds(savedTracks.map(item => item.id));
+              if (['none', 'all', 'single'].includes(saved.repeatMode)) setRepeatMode(saved.repeatMode);
+            }
+          }
+        }
+        savedFolderUri = await AsyncStorage.getItem(MUSIC_FOLDER_KEY);
+        if (mounted && savedFolderUri) setMusicFolderUri(savedFolderUri);
       } catch (error) {
-        console.warn('FoxsMusic mobile: could not load local library', error);
+        console.warn('FoxsMusic mobile: could not load local library or Music folder', error);
       } finally {
         if (mounted) setReady(true);
+      }
+
+      // If the user previously connected the Android Music folder, rescan it
+      // after launch. SAF grants access only to the folder the user selected.
+      if (mounted && savedFolderUri) {
+        setFolderSyncing(true);
+        try {
+          const result = await scanMusicFolderContents(savedFolderUri, savedTracks);
+          if (mounted && result.importedTracks.length) {
+            setTracks(current => {
+              const existingIds = new Set(current.map(track => track.id));
+              return [...current, ...result.importedTracks.filter(track => !existingIds.has(track.id))];
+            });
+            setQueueIds(current => [...new Set([...current, ...result.importedTracks.map(track => track.id)])]);
+          }
+          if (result.importedTracks.length) {
+            console.info(`FoxsMusic: automatically added ${result.importedTracks.length} new track(s) from ${result.folderName}`);
+          }
+        } catch (error) {
+          // Do not block startup if the user revoked the SAF folder permission.
+          console.warn('FoxsMusic mobile: saved Music folder could not be rescanned; reconnect it from the library screen', error);
+        } finally {
+          if (mounted) setFolderSyncing(false);
+        }
       }
     })();
     return () => { mounted = false; };
@@ -416,91 +478,79 @@ function AppContent() {
     setRepeatMode(value => value === 'none' ? 'all' : value === 'all' ? 'single' : 'none');
   }
 async function importAudioFiles() {
-  if (importing) return;
+  if (importing || folderSyncing) return;
   setImporting(true);
 
   try {
     const result = await DocumentPicker.getDocumentAsync({
       type: 'audio/*',
       multiple: true,
+      // Expo copies selected content:// files to cache so FileSystem can read them.
+      // We move each selected file into the app's private Documents folder below.
       copyToCacheDirectory: true,
     });
 
     if (result.canceled || !result.assets?.length) return;
 
     const known = new Set(
-      tracks.map(track => `${track.fileName}:${track.size || 0}`)
+      tracks.map(track => `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`)
     );
-
     const importedTracks = [];
     let skipped = 0;
+    const selectedAssets = result.assets.slice(0, MAX_IMPORT_FILES);
+    skipped += Math.max(0, result.assets.length - selectedAssets.length);
 
-    for (const asset of result.assets) {
+    // Copy files one by one. This avoids a large burst of storage I/O when
+    // several high-bitrate/large audio files are selected at once.
+    for (const asset of selectedAssets) {
       if (!asset?.uri || !asset?.name || !isSupportedAudio(asset.name)) {
         skipped++;
         continue;
       }
 
-      const size = Number.isFinite(asset.size) ? asset.size : 0;
-      const duplicateKey = size > 0 ? `${asset.name}:${size}` : null;
-
-      if (duplicateKey && known.has(duplicateKey)) {
+      const size = Number.isFinite(Number(asset.size)) ? Number(asset.size) : 0;
+      const duplicateKey = `${asset.name.toLowerCase()}:${size}`;
+      if (known.has(duplicateKey)) {
         skipped++;
         continue;
       }
 
       const id = createId();
       const extension = asset.name.split('.').pop().toLowerCase();
-
-      const destination = new File(
-        Paths.document,
-        `foxsmusic-${id}.${extension}`
-      );
-
-      // DocumentPicker уже подготовил файл во внутреннем кэше.
-      // Сначала пробуем сохранить его в постоянную папку.
-      // Если копирование не удаётся, используем URI из кэша.
-      let trackUri = asset.uri;
+      const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-${id}.${extension}`;
 
       try {
-        const source = new File(asset.uri);
-        await source.copy(destination);
+        await LegacyFileSystem.copyAsync({ from: asset.uri, to: destination });
+        const copiedInfo = await LegacyFileSystem.getInfoAsync(destination, { size: true });
+        if (!copiedInfo.exists) throw new Error('Файл не сохранился в хранилище FoxsMusic.');
 
-        if (destination.exists) {
-          trackUri = destination.uri;
-        } else {
-          console.warn(
-            `FoxsMusic mobile: permanent copy unavailable for ${asset.name}; using cache`
-          );
+        const parsed = parseTrackName(asset.name);
+        importedTracks.push({
+          id,
+          title: parsed.title,
+          artist: parsed.artist,
+          album: '',
+          fileName: asset.name,
+          size: Number(copiedInfo.size) || size,
+          uri: destination,
+          addedAt: Date.now() + importedTracks.length,
+          favorite: false,
+          duration: 0,
+        });
+        known.add(duplicateKey);
+
+        // The permanent private copy is now safe; remove the temporary picker cache copy.
+        if (asset.uri !== destination && asset.uri.includes('/cache/')) {
+          LegacyFileSystem.deleteAsync(asset.uri, { idempotent: true }).catch(() => {});
         }
       } catch (copyError) {
-        console.warn(
-          `FoxsMusic mobile: could not copy ${asset.name}; using picker cache URI`,
-          copyError
-        );
+        skipped++;
+        console.warn(`FoxsMusic mobile: failed to copy ${asset.name} into app storage`, copyError);
       }
-
-      const parsed = parseTrackName(asset.name);
-
-      importedTracks.push({
-        id,
-        title: parsed.title,
-        artist: parsed.artist,
-        album: '',
-        fileName: asset.name,
-        size,
-        uri: trackUri,
-        addedAt: Date.now() + importedTracks.length,
-        favorite: false,
-        duration: 0,
-      });
-
-      if (duplicateKey) known.add(duplicateKey);
     }
 
     if (importedTracks.length) {
       const nextTracks = [...tracks, ...importedTracks];
-
       setTracks(nextTracks);
       pendingPlay.current = null;
       setQueueIds(nextTracks.map(track => track.id));
@@ -518,49 +568,127 @@ async function importAudioFiles() {
   }
 }
 
+async function scanMusicFolderContents(folderUri, existingTracks = []) {
+  const saf = LegacyFileSystem.StorageAccessFramework;
+  if (Platform.OS !== 'android' || !saf) {
+    throw new Error('Выбор папки Music доступен в Android-версии FoxsMusic.');
+  }
+  if (!LegacyFileSystem.documentDirectory) {
+    throw new Error('Не удалось открыть внутреннее хранилище FoxsMusic.');
+  }
 
-async function importMusicFolder() {
-  if (importing) return;
-  setImporting(true);
-  try {
-    if (Platform.OS !== 'android' || !LegacyFileSystem.StorageAccessFramework) {
-      Alert.alert('FoxsMusic', language === 'en' ? 'Folder import is supported on Android.' : 'Импорт папки доступен на Android.');
-      return;
-    }
-    const permission = await LegacyFileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-    if (!permission.granted || !permission.directoryUri) return;
-    const folderName = decodeURIComponent(permission.directoryUri.split('/').pop() || 'Music');
-    const entries = await LegacyFileSystem.StorageAccessFramework.readDirectoryAsync(permission.directoryUri);
-    const known = new Set(tracks.map(track => `${track.fileName}:${track.size || 0}`));
-    const importedTracks = [];
-    let skipped = 0;
-    for (const uri of entries) {
-      const name = decodeURIComponent(uri.split('/').pop() || '');
-      if (!isSupportedAudio(name)) { skipped++; continue; }
-      if (tracks.some(track => track.fileName === name && track.sourceFolder === folderName)) { skipped++; continue; }
+  const folderName = getSafFolderName(folderUri);
+  const known = new Set(existingTracks.map(track =>
+    `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`
+  ));
+  const importedTracks = [];
+  const visitedDirectories = new Set();
+  let skipped = 0;
+
+  async function visitDirectory(directoryUri, relativeFolder, depth) {
+    if (depth > MAX_FOLDER_DEPTH || visitedDirectories.has(directoryUri)) return;
+    visitedDirectories.add(directoryUri);
+
+    const entries = await saf.readDirectoryAsync(directoryUri);
+    for (const entryUri of entries) {
+      let info = null;
+      try { info = await LegacyFileSystem.getInfoAsync(entryUri, { size: true }); }
+      catch (error) { console.warn('FoxsMusic: cannot inspect Music entry', error); }
+
+      const name = getSafEntryName(entryUri);
+      if (info?.isDirectory) {
+        try {
+          await visitDirectory(entryUri, relativeFolder ? `${relativeFolder}/${name}` : name, depth + 1);
+        } catch (folderError) {
+          skipped++;
+          console.warn(`FoxsMusic mobile: cannot scan subfolder ${name}`, folderError);
+        }
+        continue;
+      }
+      if (!isSupportedAudio(name)) continue;
+      if (importedTracks.length >= MAX_IMPORT_FILES) {
+        skipped++;
+        continue;
+      }
+
+      const size = Number(info?.size) || 0;
+      const duplicateKey = `${name.toLowerCase()}:${size}`;
+      if (known.has(duplicateKey)) {
+        skipped++;
+        continue;
+      }
+
       const id = createId();
       const extension = name.split('.').pop().toLowerCase();
       const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-${id}.${extension}`;
-      let size = 0;
-      try { const info = await LegacyFileSystem.getInfoAsync(uri, { size: true }); size = Number(info.size) || 0; } catch (_) {}
-      const key = `${name}:${size}`;
-      if (size > 0 && known.has(key)) { skipped++; continue; }
-      await LegacyFileSystem.copyAsync({ from: uri, to: destination });
-      const parsed = parseTrackName(name);
-      importedTracks.push({ id, title: parsed.title, artist: parsed.artist, album: '', fileName: name, size, uri: destination, addedAt: Date.now() + importedTracks.length, favorite: false, duration: 0, sourceFolder: folderName });
-      known.add(key);
+      try {
+        await LegacyFileSystem.copyAsync({ from: entryUri, to: destination });
+        const copiedInfo = await LegacyFileSystem.getInfoAsync(destination, { size: true });
+        if (!copiedInfo.exists) throw new Error('Файл не сохранился в хранилище FoxsMusic.');
+        const parsed = parseTrackName(name);
+        importedTracks.push({
+          id,
+          title: parsed.title,
+          artist: parsed.artist,
+          album: '',
+          fileName: name,
+          size: Number(copiedInfo.size) || size,
+          uri: destination,
+          addedAt: Date.now() + importedTracks.length,
+          favorite: false,
+          duration: 0,
+          sourceFolder: relativeFolder || folderName,
+        });
+        known.add(duplicateKey);
+      } catch (copyError) {
+        skipped++;
+        console.warn(`FoxsMusic mobile: failed to import ${name} from Music folder`, copyError);
+      }
     }
-    if (importedTracks.length) {
-      const nextTracks = [...tracks, ...importedTracks];
+  }
+
+  await visitDirectory(folderUri, folderName, 0);
+  return { folderName, importedTracks, skipped };
+}
+
+async function importMusicFolder() {
+  if (importing || folderSyncing) return;
+  setImporting(true);
+  setFolderSyncing(true);
+  try {
+    const saf = LegacyFileSystem.StorageAccessFramework;
+    if (Platform.OS !== 'android' || !saf) {
+      Alert.alert('FoxsMusic', language === 'en' ? 'Music folder connection is available on Android.' : 'Подключение папки Music доступно на Android.');
+      return;
+    }
+
+    // Open the Android system folder picker at the standard Music location when available.
+    let initialMusicUri = null;
+    try { initialMusicUri = saf.getUriForDirectoryInRoot('Music'); } catch (_) {}
+    const permission = await saf.requestDirectoryPermissionsAsync(initialMusicUri || undefined);
+    if (!permission.granted || !permission.directoryUri) return;
+
+    await AsyncStorage.setItem(MUSIC_FOLDER_KEY, permission.directoryUri);
+    setMusicFolderUri(permission.directoryUri);
+
+    const result = await scanMusicFolderContents(permission.directoryUri, tracks);
+    if (result.importedTracks.length) {
+      const nextTracks = [...tracks, ...result.importedTracks];
       setTracks(nextTracks);
       pendingPlay.current = null;
       setQueueIds(nextTracks.map(track => track.id));
     }
-    Alert.alert(t.importDone, `${t.imported}: ${importedTracks.length}\n${t.skipped}: ${skipped}`);
+    Alert.alert(
+      t.importDone,
+      `${t.imported}: ${result.importedTracks.length}\n${t.skipped}: ${result.skipped}\n\n${language === 'en' ? 'This folder will be scanned automatically when FoxsMusic starts.' : language === 'de' ? 'Dieser Ordner wird beim Start von FoxsMusic automatisch durchsucht.' : 'Эта папка будет автоматически проверяться при запуске FoxsMusic.'}`
+    );
   } catch (error) {
     console.error('FoxsMusic mobile folder import error', error);
     Alert.alert(t.importError, String(error?.message || error));
-  } finally { setImporting(false); }
+  } finally {
+    setFolderSyncing(false);
+    setImporting(false);
+  }
 }
 
 
@@ -644,7 +772,7 @@ async function importMusicFolder() {
             <Text style={styles.compactHeroCaption}>YOUR MUSIC · YOUR RULES</Text>
             <View style={styles.equalizerRow}>{[8,15,11,22,13,28,17,10,23,14,30,18,9,21,13,26,16,10].map((h, i) => <View key={i} style={[styles.equalizerBar, {height: h}]} />)}</View>
           </View>
-          <Image source={require('./assets/desktop-logo.png')} style={styles.compactHeroLogo} resizeMode="contain" />
+          <Image source={require('./assets/foxsmusic-logo.png')} style={styles.compactHeroLogo} resizeMode="contain" />
         </View>
         <View style={styles.screenHeading}>
           <View>
@@ -664,7 +792,7 @@ async function importMusicFolder() {
           </View>
           <Text style={styles.importBannerArrow}>›</Text>
         </Pressable>
-        <Pressable onPress={importMusicFolder} disabled={importing} style={({ pressed }) => [styles.folderImportButton, pressed && styles.pressed]}><Text style={styles.folderImportGlyph}>▣</Text><Text style={styles.folderImportText}>{t.importFolder}</Text><Text style={styles.folderImportArrow}>›</Text></Pressable>
+        <Pressable onPress={importMusicFolder} disabled={importing || folderSyncing} style={({ pressed }) => [styles.folderImportButton, pressed && styles.pressed]}><Text style={styles.folderImportGlyph}>▣</Text><Text style={styles.folderImportText}>{folderSyncing ? t.scanningFolder : musicFolderUri ? t.folderConnected : t.importFolder}</Text><Text style={styles.folderImportArrow}>›</Text></Pressable>
         <View style={styles.searchWrap}>
           <Text style={styles.searchGlyph}>⌕</Text>
           <TextInput

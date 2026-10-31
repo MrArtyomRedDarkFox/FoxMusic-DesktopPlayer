@@ -57,12 +57,27 @@ test('preview EAS profile creates an installable APK', () => {
 });
 
 
-test('mobile branding uses the DP hero mark and the desktop fox emblem in empty/loading states', () => {
+test('mobile branding keeps the DP header mark and uses the fox emblem in the center banner and empty/loading states', () => {
   const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
   assert.ok(fs.existsSync(path.join(root, 'assets', 'foxsmusic-logo.png')));
-  assert.match(appSource, /compactHero/);
   assert.match(appSource, /FOXSMUSIC ORIGINAL/);
-  assert.match(appSource, /require\('\.\/assets\/desktop-logo\.png'\)/);
+  assert.match(appSource, /Image source={require\('\.\/assets\/foxsmusic-logo\.png'\)} style={styles\.compactHeroLogo}/);
+  assert.match(appSource, /Image source={require\('\.\/assets\/desktop-logo\.png'\)} style={styles\.brandMarkImage}/);
   assert.match(appSource, /require\('\.\/assets\/foxsmusic-logo\.png'\)/);
   assert.doesNotMatch(appSource, /fox-headphones\.png/);
+});
+
+test('connected Music folder is remembered and rescanned after app launch', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /MUSIC_FOLDER_KEY/);
+  assert.match(appSource, /requestDirectoryPermissionsAsync\(initialMusicUri \|\| undefined\)/);
+  assert.match(appSource, /scanMusicFolderContents\(savedFolderUri, savedTracks\)/);
+  assert.match(appSource, /sourceFolder: relativeFolder \|\| folderName/);
+});
+
+test('audio picker imports are copied sequentially into persistent app storage', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /MAX_IMPORT_FILES = 250/);
+  assert.match(appSource, /await LegacyFileSystem\.copyAsync\(\{ from: asset\.uri, to: destination \}\)/);
+  assert.doesNotMatch(appSource, /using cache URI/);
 });
