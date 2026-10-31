@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  ImageBackground,
   FlatList,
   Image,
   Modal,
@@ -26,12 +28,16 @@ import {
   useAudioPlaylist,
   useAudioPlaylistStatus,
 } from 'expo-audio';
-import { createId, formatTime, isSupportedAudio, parseTrackName, sortTracks } from './src/core';
+import { createId, formatTime, formatDateTime, isSupportedAudio, parseTrackName, sortTracks, sortMostPlayed, isValidHexColor } from './src/core';
 
 const STORAGE_KEY = 'foxsmusic-mobile-library-v1';
 const MUSIC_FOLDER_KEY = 'foxsmusic-mobile-music-folder-v1';
 const MAX_IMPORT_FILES = 250;
 const MAX_FOLDER_DEPTH = 8;
+const DEFAULT_PROFILE = { name: 'MrArtyomRedDarkFox', avatarUri: null, accentColor: '#F12743', backgroundColor: '#08070A', panelStyle: 'classic', season: 'none', backgroundImageUri: null };
+const ACCENT_PRESETS = ['#F12743', '#FF5A36', '#E43B7A', '#9A5BFF', '#477BFF', '#20A58A', '#E0A52B', '#E8E8EC'];
+const BACKGROUND_PRESETS = ['#08070A', '#100A13', '#16080D', '#111216', '#090E17'];
+const SEASONS = { none: [], halloween: ['🦇', '✦', '🕸'], christmas: ['❄', '✧', '❅'], birthday: ['✦', '🎊', '🍬'] };
 const C = {
   background: '#08070A',
   panel: '#141015',
@@ -71,6 +77,11 @@ const COPY = {
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
     ok: 'Понятно', createFirst: 'Создай первый плейлист', playlistTracks: 'треков в плейлисте',
+    smartRecent: 'НЕДАВНО ДОБАВЛЕННЫЕ', smartFrequent: 'ЧАСТО ПРОСЛУШИВАЕМЫЕ', playedTimes: 'прослушиваний', noPlayed: 'Пока нет статистики прослушиваний', sourceDate: 'Дата исходного файла',
+    profile: 'ПРОФИЛЬ', profileName: 'Имя профиля', profileAvatar: 'Аватар профиля', chooseAvatar: 'Выбрать аватар', removeAvatar: 'Удалить аватар',
+    appearance: 'ОФОРМЛЕНИЕ', accentColor: 'Основной цвет', backgroundColor: 'Цвет фона', panelStyle: 'Стиль карточек', styleClassic: 'Классический', styleSoft: 'Мягкий', styleGlass: 'Стекло', customColor: 'Свой HEX-цвет', applyColor: 'Применить',
+    season: 'Сезонный фон', noSeason: 'Отключён', halloween: 'Хеллоуин', christmas: 'Новый год', birthday: 'День рождения',
+    customBackground: 'Собственная картинка фона', chooseBackground: 'Выбрать изображение', removeBackground: 'Удалить изображение', resetProfile: 'Сбросить оформление и профиль', swipeHint: 'Листай экраны свайпом влево или вправо',
     back: 'Назад', emptyPlaylist: 'В этом плейлисте пока нет треков',
   },
   en: {
@@ -97,6 +108,11 @@ const COPY = {
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
     ok: 'OK', createFirst: 'Create your first playlist', playlistTracks: 'tracks in playlist',
+    smartRecent: 'RECENTLY ADDED', smartFrequent: 'MOST PLAYED', playedTimes: 'plays', noPlayed: 'No listening stats yet', sourceDate: 'Source file date',
+    profile: 'PROFILE', profileName: 'Profile name', profileAvatar: 'Profile avatar', chooseAvatar: 'Choose avatar', removeAvatar: 'Remove avatar',
+    appearance: 'APPEARANCE', accentColor: 'Accent color', backgroundColor: 'Background color', panelStyle: 'Card style', styleClassic: 'Classic', styleSoft: 'Soft', styleGlass: 'Glass', customColor: 'Custom HEX color', applyColor: 'Apply',
+    season: 'Seasonal background', noSeason: 'Off', halloween: 'Halloween', christmas: 'Christmas', birthday: 'Birthday',
+    customBackground: 'Custom background image', chooseBackground: 'Choose image', removeBackground: 'Remove image', resetProfile: 'Reset profile and appearance', swipeHint: 'Swipe left or right to change screens',
     back: 'Back', emptyPlaylist: 'This playlist has no tracks yet',
   },
   de: {
@@ -123,21 +139,60 @@ const COPY = {
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
     ok: 'OK', createFirst: 'Erstelle deine erste Playlist', playlistTracks: 'Titel in der Playlist',
+    smartRecent: 'KÜRZLICH HINZUGEFÜGT', smartFrequent: 'AM HÄUFIGSTEN', playedTimes: 'Wiedergaben', noPlayed: 'Noch keine Wiedergabestatistik', sourceDate: 'Dateidatum',
+    profile: 'PROFIL', profileName: 'Profilname', profileAvatar: 'Profilbild', chooseAvatar: 'Profilbild auswählen', removeAvatar: 'Profilbild entfernen',
+    appearance: 'DESIGN', accentColor: 'Akzentfarbe', backgroundColor: 'Hintergrundfarbe', panelStyle: 'Kartenstil', styleClassic: 'Klassisch', styleSoft: 'Sanft', styleGlass: 'Glas', customColor: 'Eigene HEX-Farbe', applyColor: 'Anwenden',
+    season: 'Saisonaler Hintergrund', noSeason: 'Aus', halloween: 'Halloween', christmas: 'Weihnachten', birthday: 'Geburtstag',
+    customBackground: 'Eigenes Hintergrundbild', chooseBackground: 'Bild auswählen', removeBackground: 'Bild entfernen', resetProfile: 'Profil und Design zurücksetzen', swipeHint: 'Wische nach links oder rechts, um den Bildschirm zu wechseln',
     back: 'Zurück', emptyPlaylist: 'Diese Playlist enthält noch keine Titel',
   },
 };
 
-function Artwork({ size = 54, title = 'F' }) {
+function Artwork({ size = 54, title = 'F', imageUri = null }) {
   return (
     <View style={[styles.artwork, { width: size, height: size, borderRadius: Math.max(12, size * 0.2) }]}>
-      <View style={styles.artworkGlow} />
-      <Text style={[styles.artworkGlyph, { fontSize: size * 0.47 }]}>{title ? title.slice(0, 1).toUpperCase() : '♫'}</Text>
-      <Text style={styles.artworkWord}>FOX</Text>
+      {imageUri ? <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : <>
+        <View style={styles.artworkGlow} />
+        <Text style={[styles.artworkGlyph, { fontSize: size * 0.47 }]}>{title ? title.slice(0, 1).toUpperCase() : '♫'}</Text>
+        <Text style={styles.artworkWord}>FOX</Text>
+      </>}
     </View>
   );
 }
 
-function ActionButton({ label, onPress, active = false, small = false, accessibilityLabel }) {
+function SeasonalEffects({ season }) {
+  const symbols = SEASONS[season] || [];
+  const valuesRef = useRef(null);
+  if (!valuesRef.current) valuesRef.current = Array.from({ length: 10 }, () => new Animated.Value(0));
+  const values = valuesRef.current;
+  useEffect(() => {
+    const loops = values.map((value, index) => {
+      value.setValue(0);
+      if (!symbols.length) return null;
+      const loop = Animated.loop(Animated.sequence([
+        Animated.delay(index * 430),
+        Animated.timing(value, { toValue: 1, duration: 6800 + index * 360, useNativeDriver: true }),
+        Animated.timing(value, { toValue: 0, duration: 1, useNativeDriver: true }),
+      ]));
+      loop.start();
+      return loop;
+    });
+    return () => loops.forEach(loop => loop?.stop());
+  }, [season]);
+  if (!symbols.length) return null;
+  return (
+    <View pointerEvents="none" style={styles.seasonLayer}>
+      {values.map((value, index) => {
+        const translateY = value.interpolate({ inputRange: [0, 1], outputRange: [-45, 900] });
+        const opacity = value.interpolate({ inputRange: [0, 0.12, 0.85, 1], outputRange: [0, 0.58, 0.46, 0] });
+        const symbol = symbols[index % symbols.length];
+        return <Animated.Text key={`${season}-${index}`} style={[styles.seasonParticle, { left: `${6 + ((index * 37) % 89)}%`, opacity, transform: [{ translateY }, { rotate: `${(index % 2 ? 1 : -1) * (index * 11 + 8)}deg` }] }]}>{symbol}</Animated.Text>;
+      })}
+    </View>
+  );
+}
+
+function ActionButton({ label, onPress, active = false, small = false, accessibilityLabel, accentColor = C.red }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -147,25 +202,25 @@ function ActionButton({ label, onPress, active = false, small = false, accessibi
       style={({ pressed }) => [
         styles.actionButton,
         small && styles.actionButtonSmall,
-        active && styles.actionButtonActive,
+        active && [styles.actionButtonActive, { borderColor: accentColor, backgroundColor: `${accentColor}26` }],
         pressed && styles.pressed,
       ]}
     >
-      <Text style={[styles.actionButtonText, active && styles.actionButtonTextActive, small && styles.actionButtonTextSmall]}>{label}</Text>
+      <Text style={[styles.actionButtonText, active && [styles.actionButtonTextActive, { color: accentColor }], small && styles.actionButtonTextSmall]}>{label}</Text>
     </Pressable>
   );
 }
 
-function TrackRow({ track, index, active, language, onPlay, onFavorite, onAdd }) {
+function TrackRow({ track, index, active, language, onPlay, onFavorite, onAdd, playCount = 0, accentColor = C.red, panelBackground = '#100D12' }) {
   const t = COPY[language];
   return (
-    <View style={[styles.trackRow, active && styles.trackRowActive]}>
+    <View style={[styles.trackRow, active && styles.trackRowActive, { backgroundColor: active ? `${accentColor}20` : panelBackground, borderColor: active ? accentColor : C.line }]}>
       <Pressable style={styles.trackMain} onPress={onPlay} accessibilityRole="button">
-        <Artwork title={track.title} />
+        <Artwork title={track.title} imageUri={track.artworkUri} />
         <View style={styles.trackCopy}>
-          <Text numberOfLines={1} style={[styles.trackTitle, active && styles.trackTitleActive]}>{track.title}</Text>
-          <Text numberOfLines={1} style={styles.trackArtist}>{track.artist || t.unknownArtist}</Text>
-          <Text numberOfLines={1} style={styles.trackMeta}>{track.sourceFolder ? `${track.sourceFolder} · ` : ''}{t.addedOn}: {track.addedAt ? new Date(track.addedAt).toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US') : '—'}</Text>
+          <Text numberOfLines={1} style={[styles.trackTitle, active && [styles.trackTitleActive, { color: accentColor }]]}>{track.title}</Text>
+          <Text numberOfLines={1} style={styles.trackArtist}>{track.artist || t.unknownArtist}{track.album ? ` · ${track.album}` : ''}</Text>
+          <Text numberOfLines={1} style={styles.trackMeta}>{track.sourceFolder ? `${track.sourceFolder} · ` : ''}{t.sourceDate}: {formatDateTime(track.originalModifiedAt || track.addedAt, language)}{playCount > 0 ? ` · ${playCount} ${t.playedTimes}` : ''}</Text>
         </View>
       </Pressable>
       <Pressable onPress={onFavorite} hitSlop={8} accessibilityRole="button" accessibilityLabel={t.favorites} style={styles.rowIconButton}>
@@ -208,6 +263,13 @@ function AppContent() {
   const [libraryFilter, setLibraryFilter] = useState('all');
   const [sortMode, setSortMode] = useState('recent');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [selectedSmartPlaylist, setSelectedSmartPlaylist] = useState(null);
+  const [playStats, setPlayStats] = useState({});
+  const [profile, setProfile] = useState(DEFAULT_PROFILE);
+  const [colorInput, setColorInput] = useState(DEFAULT_PROFILE.accentColor);
+  const [profileNameInput, setProfileNameInput] = useState(DEFAULT_PROFILE.name);
+  const swipeTouchStart = useRef(null);
+  const screenAnim = useRef(new Animated.Value(1)).current;
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueIds, setQueueIds] = useState([]);
   const [currentTrackId, setCurrentTrackId] = useState(null);
@@ -223,6 +285,7 @@ function AppContent() {
   const currentQueueKey = useRef('');
   const pendingPlay = useRef(null);
   const currentTrackIdRef = useRef(null);
+  const lastCountedTrackId = useRef(null);
   const notificationAsked = useRef(false);
   const audioModeReady = useRef(null);
   const seekWidth = useRef(1);
@@ -254,6 +317,18 @@ function AppContent() {
   const queueTracks = queueIds.map(id => tracks.find(track => track.id === id)).filter(Boolean);
   const queueCurrentIndex = currentTrackId ? queueIds.indexOf(currentTrackId) : -1;
   const playlistDetail = playlists.find(item => item.id === selectedPlaylistId) || null;
+  const accentColor = profile.accentColor || C.red;
+  const panelBackground = profile.panelStyle === 'glass' ? 'rgba(25, 13, 20, 0.82)' : profile.panelStyle === 'soft' ? '#21151D' : '#141015';
+  const recentSmartTracks = useMemo(() => sortTracks(tracks, 'recent').slice(0, 50), [tracks]);
+  const frequentSmartTracks = useMemo(() => sortMostPlayed(tracks.filter(track => (Number(playStats[track.id]?.count) || 0) > 0), playStats).slice(0, 50), [tracks, playStats]);
+  const smartTracks = selectedSmartPlaylist === 'recent' ? recentSmartTracks : selectedSmartPlaylist === 'frequent' ? frequentSmartTracks : [];
+  const smartTitle = selectedSmartPlaylist === 'recent' ? t.smartRecent : t.smartFrequent;
+
+  function recordTrackPlay(trackId) {
+    if (!trackId || lastCountedTrackId.current === trackId) return;
+    lastCountedTrackId.current = trackId;
+    setPlayStats(current => ({ ...current, [trackId]: { count: (Number(current[trackId]?.count) || 0) + 1, lastPlayedAt: Date.now() } }));
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -278,6 +353,15 @@ function AppContent() {
                 trackIds: Array.isArray(item.trackIds) ? item.trackIds.filter(id => typeof id === 'string') : [],
               })));
               setLanguage(['ru', 'en', 'de'].includes(saved.language) ? saved.language : 'ru');
+              if (saved.playStats && typeof saved.playStats === 'object') setPlayStats(saved.playStats);
+              if (saved.profile && typeof saved.profile === 'object') {
+                const safeProfile = { ...DEFAULT_PROFILE, ...saved.profile };
+                if (!isValidHexColor(safeProfile.accentColor)) safeProfile.accentColor = DEFAULT_PROFILE.accentColor;
+                if (!isValidHexColor(safeProfile.backgroundColor)) safeProfile.backgroundColor = DEFAULT_PROFILE.backgroundColor;
+                if (!['classic', 'soft', 'glass'].includes(safeProfile.panelStyle)) safeProfile.panelStyle = 'classic';
+                if (!['none', 'halloween', 'christmas', 'birthday'].includes(safeProfile.season)) safeProfile.season = 'none';
+                setProfile(safeProfile); setColorInput(safeProfile.accentColor); setProfileNameInput(safeProfile.name || DEFAULT_PROFILE.name);
+              }
               setQueueIds(savedTracks.map(item => item.id));
               if (['none', 'all', 'single'].includes(saved.repeatMode)) setRepeatMode(saved.repeatMode);
             }
@@ -297,6 +381,10 @@ function AppContent() {
         setFolderSyncing(true);
         try {
           const result = await scanMusicFolderContents(savedFolderUri, savedTracks);
+          if (mounted && result.metadataUpdates?.length) {
+            const updates = new Map(result.metadataUpdates.map(item => [item.id, item]));
+            setTracks(current => current.map(track => updates.has(track.id) ? { ...track, ...updates.get(track.id) } : track));
+          }
           if (mounted && result.importedTracks.length) {
             setTracks(current => {
               const existingIds = new Set(current.map(track => track.id));
@@ -320,11 +408,16 @@ function AppContent() {
 
   useEffect(() => {
     if (!ready) return;
-    const payload = { version: 1, tracks, playlists, language, repeatMode };
+    const payload = { version: 1, tracks, playlists, language, repeatMode, playStats, profile };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(error => {
       console.warn('FoxsMusic mobile: could not persist library', error);
     });
-  }, [ready, tracks, playlists, language, repeatMode]);
+  }, [ready, tracks, playlists, language, repeatMode, playStats, profile]);
+
+  useEffect(() => {
+    screenAnim.setValue(0);
+    Animated.timing(screenAnim, { toValue: 1, duration: 190, useNativeDriver: true }).start();
+  }, [screen]);
 
   useEffect(() => {
     audioModeReady.current = setAudioModeAsync({
@@ -383,6 +476,7 @@ function AppContent() {
 
   useEffect(() => {
     currentTrackIdRef.current = currentTrackId;
+    if (currentTrackId) recordTrackPlay(currentTrackId);
   }, [currentTrackId]);
 
   useEffect(() => {
@@ -458,6 +552,7 @@ function AppContent() {
       return;
     }
 
+    recordTrackPlay(track.id);
     const targetQueue = Array.isArray(queueOverride) ? queueOverride : getQueueForLibrary();
     const targetKey = targetQueue.join('\u001f');
     if (targetKey !== currentQueueKey.current) {
@@ -569,6 +664,7 @@ async function importAudioFiles() {
           addedAt: Date.now() + importedTracks.length,
           favorite: false,
           duration: 0,
+          originalModifiedAt: (() => { const stamp = Number(asset.creationTime || asset.lastModified || asset.modificationTime || 0); return stamp > 0 ? (stamp < 1e12 ? stamp * 1000 : stamp) : Date.now(); })(),
         });
         known.add(duplicateKey);
 
@@ -603,54 +699,67 @@ async function importAudioFiles() {
 
 async function scanMusicFolderContents(folderUri, existingTracks = []) {
   const saf = LegacyFileSystem.StorageAccessFramework;
-  if (Platform.OS !== 'android' || !saf) {
-    throw new Error('Выбор папки Music доступен в Android-версии FoxsMusic.');
-  }
-  if (!LegacyFileSystem.documentDirectory) {
-    throw new Error('Не удалось открыть внутреннее хранилище FoxsMusic.');
-  }
+  if (Platform.OS !== 'android' || !saf) throw new Error('Выбор папки Music доступен в Android-версии FoxsMusic.');
+  if (!LegacyFileSystem.documentDirectory) throw new Error('Не удалось открыть внутреннее хранилище FoxsMusic.');
 
   const folderName = getSafFolderName(folderUri);
-  const known = new Set(existingTracks.map(track =>
-    `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`
-  ));
+  const known = new Set(existingTracks.map(track => `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`));
+  const existingByKey = new Map(existingTracks.map(track => [`${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`, track]));
   const importedTracks = [];
+  const metadataUpdates = [];
   const visitedDirectories = new Set();
   let skipped = 0;
+
+  function stableFolderKey(value) {
+    let hash = 2166136261;
+    for (const char of String(value)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); }
+    return (hash >>> 0).toString(16);
+  }
+
+  async function copyFolderArtwork(entries, folderKey) {
+    const names = ['cover.jpg', 'cover.jpeg', 'cover.png', 'folder.jpg', 'folder.png', 'album.jpg', 'album.png', 'front.jpg', 'front.png'];
+    for (const uri of entries) {
+      const name = getSafEntryName(uri).toLowerCase();
+      if (!names.includes(name)) continue;
+      const extension = name.split('.').pop();
+      const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-art-${stableFolderKey(folderKey)}.${extension}`;
+      try {
+        const existing = await LegacyFileSystem.getInfoAsync(destination);
+        if (!existing.exists) await LegacyFileSystem.copyAsync({ from: uri, to: destination });
+        const copied = await LegacyFileSystem.getInfoAsync(destination);
+        if (copied.exists) return destination;
+      } catch (error) { console.warn('FoxsMusic: could not copy folder artwork', error); }
+    }
+    return null;
+  }
 
   async function visitDirectory(directoryUri, relativeFolder, depth) {
     if (depth > MAX_FOLDER_DEPTH || visitedDirectories.has(directoryUri)) return;
     visitedDirectories.add(directoryUri);
-
     const entries = await saf.readDirectoryAsync(directoryUri);
+    const folderArtwork = await copyFolderArtwork(entries, directoryUri);
+
     for (const entryUri of entries) {
       let info = null;
       try { info = await LegacyFileSystem.getInfoAsync(entryUri, { size: true }); }
       catch (error) { console.warn('FoxsMusic: cannot inspect Music entry', error); }
-
       const name = getSafEntryName(entryUri);
       if (info?.isDirectory) {
-        try {
-          await visitDirectory(entryUri, relativeFolder ? `${relativeFolder}/${name}` : name, depth + 1);
-        } catch (folderError) {
-          skipped++;
-          console.warn(`FoxsMusic mobile: cannot scan subfolder ${name}`, folderError);
-        }
+        try { await visitDirectory(entryUri, relativeFolder ? `${relativeFolder}/${name}` : name, depth + 1); }
+        catch (folderError) { skipped++; console.warn(`FoxsMusic mobile: cannot scan subfolder ${name}`, folderError); }
         continue;
       }
       if (!isSupportedAudio(name)) continue;
-      if (importedTracks.length >= MAX_IMPORT_FILES) {
-        skipped++;
-        continue;
-      }
-
+      if (importedTracks.length >= MAX_IMPORT_FILES) { skipped++; continue; }
       const size = Number(info?.size) || 0;
       const duplicateKey = `${name.toLowerCase()}:${size}`;
       if (known.has(duplicateKey)) {
-        skipped++;
-        continue;
+        const existing = existingByKey.get(duplicateKey);
+        if (existing && (!existing.sourceFolder || !existing.artworkUri || !existing.originalModifiedAt || !existing.album)) {
+          metadataUpdates.push({ id: existing.id, sourceFolder: relativeFolder || folderName, album: relativeFolder.split('/').pop() || folderName, artworkUri: folderArtwork || existing.artworkUri || null, originalModifiedAt: Number(info?.creationTime || info?.modificationTime) ? Number(info.creationTime || info.modificationTime) * 1000 : existing.originalModifiedAt || null });
+        }
+        skipped++; continue;
       }
-
       const id = createId();
       const extension = name.split('.').pop().toLowerCase();
       const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-${id}.${extension}`;
@@ -660,28 +769,18 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
         if (!copiedInfo.exists) throw new Error('Файл не сохранился в хранилище FoxsMusic.');
         const parsed = parseTrackName(name);
         importedTracks.push({
-          id,
-          title: parsed.title,
-          artist: parsed.artist,
-          album: '',
-          fileName: name,
-          size: Number(copiedInfo.size) || size,
-          uri: destination,
-          addedAt: Date.now() + importedTracks.length,
-          favorite: false,
-          duration: 0,
-          sourceFolder: relativeFolder || folderName,
+          id, title: parsed.title, artist: parsed.artist, album: relativeFolder.split('/').pop() || folderName,
+          fileName: name, size: Number(copiedInfo.size) || size, uri: destination,
+          addedAt: Date.now() + importedTracks.length, originalModifiedAt: Number(info?.creationTime || info?.modificationTime) ? Number(info.creationTime || info.modificationTime) * 1000 : Date.now(),
+          favorite: false, duration: 0, sourceFolder: relativeFolder || folderName, artworkUri: folderArtwork || null,
         });
         known.add(duplicateKey);
-      } catch (copyError) {
-        skipped++;
-        console.warn(`FoxsMusic mobile: failed to import ${name} from Music folder`, copyError);
-      }
+      } catch (copyError) { skipped++; console.warn(`FoxsMusic mobile: failed to import ${name} from Music folder`, copyError); }
     }
   }
 
   await visitDirectory(folderUri, folderName, 0);
-  return { folderName, importedTracks, skipped };
+  return { folderName, importedTracks, metadataUpdates, skipped };
 }
 
 async function rescanConnectedMusicFolder() {
@@ -689,6 +788,10 @@ async function rescanConnectedMusicFolder() {
   setFolderSyncing(true);
   try {
     const result = await scanMusicFolderContents(musicFolderUri, tracks);
+    if (result.metadataUpdates?.length) {
+      const updates = new Map(result.metadataUpdates.map(item => [item.id, item]));
+      setTracks(current => current.map(track => updates.has(track.id) ? { ...track, ...updates.get(track.id) } : track));
+    }
     if (result.importedTracks.length) {
       setTracks(current => {
         const existing = new Set(current.map(track => `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`));
@@ -727,11 +830,14 @@ async function importMusicFolder() {
     setMusicFolderUri(permission.directoryUri);
 
     const result = await scanMusicFolderContents(permission.directoryUri, tracks);
-    if (result.importedTracks.length) {
-      const nextTracks = [...tracks, ...result.importedTracks];
+    const metadataMap = new Map((result.metadataUpdates || []).map(item => [item.id, item]));
+    if (result.metadataUpdates?.length || result.importedTracks.length) {
+      const enriched = tracks.map(track => metadataMap.has(track.id) ? { ...track, ...metadataMap.get(track.id) } : track);
+      const existingIds = new Set(enriched.map(track => track.id));
+      const nextTracks = [...enriched, ...result.importedTracks.filter(track => !existingIds.has(track.id))];
       setTracks(nextTracks);
-      pendingPlay.current = null;
       setQueueIds(nextTracks.map(track => track.id));
+      pendingPlay.current = null;
     }
     Alert.alert(
       t.importDone,
@@ -794,7 +900,25 @@ async function importMusicFolder() {
   }
 
   function openPlaylist(item) {
+    setSelectedSmartPlaylist(null);
     setSelectedPlaylistId(item.id);
+  }
+
+  function openSmartPlaylist(id) {
+    setSelectedPlaylistId(null);
+    setSelectedSmartPlaylist(id);
+  }
+
+  function resetProfile() {
+    Alert.alert('FoxsMusic', language === 'en' ? 'Reset profile appearance? Your music and playlists will stay.' : language === 'de' ? 'Profildesign zurücksetzen? Musik und Playlists bleiben erhalten.' : 'Сбросить оформление профиля? Музыка и плейлисты останутся.', [
+      { text: t.cancel, style: 'cancel' },
+      { text: language === 'en' ? 'Reset' : language === 'de' ? 'Zurücksetzen' : 'Сбросить', style: 'destructive', onPress: () => {
+        const oldBackground = profile.backgroundImageUri;
+        const oldAvatar = profile.avatarUri;
+        setProfile(DEFAULT_PROFILE); setColorInput(DEFAULT_PROFILE.accentColor); setProfileNameInput(DEFAULT_PROFILE.name);
+        [oldBackground, oldAvatar].filter(Boolean).forEach(uri => LegacyFileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {}));
+      } },
+    ]);
   }
 
   function playPlaylistTrack(track) {
@@ -813,54 +937,101 @@ async function importMusicFolder() {
         onPlay={() => queue === 'playlist' ? playPlaylistTrack(item) : playTrack(item)}
         onFavorite={() => toggleFavorite(item.id)}
         onAdd={() => openAddToPlaylist(item.id)}
+        playCount={Number(playStats[item.id]?.count) || 0}
+        accentColor={accentColor}
+        panelBackground={panelBackground}
       />
     );
+  }
+
+  async function pickProfileImage(target) {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'image/*', multiple: false, copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const asset = result.assets[0];
+      const extension = String(asset.name || 'image.jpg').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-${target}-${createId()}.${extension}`;
+      await LegacyFileSystem.copyAsync({ from: asset.uri, to: destination });
+      const info = await LegacyFileSystem.getInfoAsync(destination);
+      if (!info.exists) throw new Error('Не удалось сохранить изображение в FoxsMusic.');
+      const imageKey = target === 'background' ? 'backgroundImageUri' : 'avatarUri';
+      const previousImage = profile[imageKey];
+      setProfile(current => ({ ...current, [imageKey]: destination }));
+      if (previousImage) LegacyFileSystem.deleteAsync(previousImage, { idempotent: true }).catch(() => {});
+    } catch (error) {
+      Alert.alert('FoxsMusic', `Не удалось загрузить изображение: ${String(error?.message || error)}`);
+    }
+  }
+
+  function removeProfileImage(target) {
+    const key = target === 'background' ? 'backgroundImageUri' : 'avatarUri';
+    const uri = profile[key];
+    setProfile(current => ({ ...current, [key]: null }));
+    if (uri) LegacyFileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+  }
+
+  function applyCustomColor() {
+    const normalized = colorInput.trim().startsWith('#') ? colorInput.trim() : `#${colorInput.trim()}`;
+    if (!isValidHexColor(normalized)) {
+      Alert.alert('FoxsMusic', language === 'en' ? 'Enter a valid HEX color, for example #F12743.' : language === 'de' ? 'Gib eine gültige HEX-Farbe ein, z. B. #F12743.' : 'Введи корректный HEX-цвет, например #F12743.');
+      return;
+    }
+    setProfile(current => ({ ...current, accentColor: normalized.toUpperCase() }));
+    setColorInput(normalized.toUpperCase());
+  }
+
+  function navigateSwipe(dx, dy, startY) {
+    if (Math.abs(dx) < 85 || Math.abs(dy) > 70 || Number(startY) > 210 || playlistModalVisible) return;
+    const tabs = ['library', 'playlists', 'player', 'settings'];
+    const index = tabs.indexOf(screen);
+    const nextIndex = Math.max(0, Math.min(tabs.length - 1, index + (dx < 0 ? 1 : -1)));
+    if (nextIndex !== index) setScreen(tabs[nextIndex]);
   }
 
   function renderLibraryHeader() {
     return (
       <View>
-        <View style={styles.compactHero}>
+        <View style={[styles.compactHero, { borderColor: `${accentColor}88`, backgroundColor: panelBackground }]}>
           <View style={styles.compactHeroCopy}>
             <Text style={styles.compactHeroEyebrow}>FOXSMUSIC ORIGINAL</Text>
             <Text style={styles.compactHeroTitle}>{'Feel the dark.\nHear the fire.'}</Text>
             <Text style={styles.compactHeroCaption}>YOUR MUSIC · YOUR RULES</Text>
-            <View style={styles.equalizerRow}>{[8,15,11,22,13,28,17,10,23,14,30,18,9,21,13,26,16,10].map((h, i) => <View key={i} style={[styles.equalizerBar, {height: h}]} />)}</View>
+            <View style={styles.equalizerRow}>{[8,15,11,22,13,28,17,10,23,14,30,18,9,21,13,26,16,10].map((h, i) => <View key={i} style={[styles.equalizerBar, { height: h, backgroundColor: accentColor }]} />)}</View>
           </View>
           <Image source={require('./assets/foxsmusic-logo.png')} style={styles.compactHeroLogo} resizeMode="contain" />
         </View>
         <View style={styles.screenHeading}>
           <View>
             <Text style={styles.eyebrow}>{t.collection}</Text>
-            <Text style={styles.screenTitle}>{t.library}<Text style={styles.titleDot}>.</Text></Text>
+            <Text style={styles.screenTitle}>{t.library}<Text style={[styles.titleDot, { color: accentColor }]}>.</Text></Text>
             <Text style={styles.screenSubtitle}>{tracks.length} {t.tracks}</Text>
           </View>
           <Pressable onPress={importAudioFiles} disabled={importing} style={({ pressed }) => [styles.importCircle, pressed && styles.pressed]}>
             {importing ? <ActivityIndicator color={C.text} /> : <Text style={styles.importPlus}>＋</Text>}
           </Pressable>
         </View>
-        <Pressable onPress={importAudioFiles} disabled={importing} style={({ pressed }) => [styles.importBanner, pressed && styles.pressed]}>
-          <View style={styles.importBannerIcon}><Text style={styles.importBannerGlyph}>♫</Text></View>
+        <Pressable onPress={importAudioFiles} disabled={importing} style={({ pressed }) => [styles.importBanner, { borderColor: `${accentColor}88`, backgroundColor: panelBackground }, pressed && styles.pressed]}>
+          <View style={[styles.importBannerIcon, { backgroundColor: `${accentColor}22` }]}><Text style={[styles.importBannerGlyph, { color: accentColor }]}>♫</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.importBannerTitle}>{importing ? '…' : t.import}</Text>
             <Text style={styles.importBannerSubtitle}>{t.importHint}</Text>
           </View>
-          <Text style={styles.importBannerArrow}>›</Text>
+          <Text style={[styles.importBannerArrow, { color: accentColor }]}>›</Text>
         </Pressable>
         <View style={styles.folderActionsRow}>
           <Pressable onPress={importMusicFolder} disabled={importing || folderSyncing} style={({ pressed }) => [styles.folderImportButton, musicFolderUri && styles.folderImportButtonConnected, pressed && styles.pressed]}>
-            <Text style={styles.folderImportGlyph}>▣</Text>
+            <Text style={[styles.folderImportGlyph, { color: accentColor }]}>▣</Text>
             <Text numberOfLines={1} style={styles.folderImportText}>{folderSyncing ? t.scanningFolder : musicFolderUri ? t.folderConnected : t.importFolder}</Text>
-            <Text style={styles.folderImportArrow}>›</Text>
+            <Text style={[styles.folderImportArrow, { color: accentColor }]}>›</Text>
           </Pressable>
           {musicFolderUri && (
-            <Pressable onPress={rescanConnectedMusicFolder} disabled={importing || folderSyncing} accessibilityRole="button" accessibilityLabel={t.rescanFolder} style={({ pressed }) => [styles.folderRescanButton, pressed && styles.pressed]}>
-              {folderSyncing ? <ActivityIndicator size="small" color={C.red} /> : <Text style={styles.folderRescanGlyph}>↻</Text>}
+            <Pressable onPress={rescanConnectedMusicFolder} disabled={importing || folderSyncing} accessibilityRole="button" accessibilityLabel={t.rescanFolder} style={({ pressed }) => [styles.folderRescanButton, { width: 52, height: 52, borderColor: accentColor }, pressed && styles.pressed]}>
+              {folderSyncing ? <ActivityIndicator size="small" color={C.red} /> : <Text style={[styles.folderRescanGlyph, { color: accentColor }]}>↻</Text>}
             </Pressable>
           )}
         </View>
-        <View style={styles.searchWrap}>
-          <Text style={styles.searchGlyph}>⌕</Text>
+        <View style={[styles.searchWrap, { borderColor: `${accentColor}66` }]}>
+          <Text style={[styles.searchGlyph, { color: accentColor }]}>⌕</Text>
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -873,8 +1044,8 @@ async function importMusicFolder() {
           {search.length > 0 && <Pressable onPress={() => setSearch('')}><Text style={styles.clearSearch}>×</Text></Pressable>}
         </View>
         <View style={styles.filterRow}>
-          <Pressable onPress={() => setLibraryFilter('all')} style={[styles.filterChip, libraryFilter === 'all' && styles.filterChipActive]}><Text style={[styles.filterText, libraryFilter === 'all' && styles.filterTextActive]}>{t.all}</Text></Pressable>
-          <Pressable onPress={() => setLibraryFilter('favorites')} style={[styles.filterChip, libraryFilter === 'favorites' && styles.filterChipActive]}><Text style={[styles.filterText, libraryFilter === 'favorites' && styles.filterChipActive && styles.filterTextActive]}>♥ {t.favorites}</Text></Pressable>
+          <Pressable onPress={() => setLibraryFilter('all')} style={[styles.filterChip, { minHeight: 48, justifyContent: 'center' }, libraryFilter === 'all' && [styles.filterChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}30` }]]}><Text style={[styles.filterText, libraryFilter === 'all' && styles.filterTextActive]}>{t.all}</Text></Pressable>
+          <Pressable onPress={() => setLibraryFilter('favorites')} style={[styles.filterChip, { minHeight: 48, justifyContent: 'center' }, libraryFilter === 'favorites' && [styles.filterChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}30` }]]}><Text style={[styles.filterText, libraryFilter === 'favorites' && styles.filterChipActive && styles.filterTextActive]}>♥ {t.favorites}</Text></Pressable>
           <Text style={styles.listCount}>{visibleTracks.length} {t.tracks}</Text>
         </View>
         {tracks.length > 0 && (
@@ -886,7 +1057,7 @@ async function importMusicFolder() {
                 ['title', t.sortTitle],
                 ['artist', t.sortArtist],
               ].map(([id, label]) => (
-                <Pressable key={id} onPress={() => setSortMode(id)} style={[styles.toolChip, sortMode === id && styles.toolChipActive]}>
+                <Pressable key={id} onPress={() => setSortMode(id)} style={[styles.toolChip, sortMode === id && [styles.toolChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}28` }]]}>
                   <Text style={[styles.toolChipText, sortMode === id && styles.toolChipTextActive]}>{label}</Text>
                 </Pressable>
               ))}
@@ -895,19 +1066,19 @@ async function importMusicFolder() {
               <>
                 <Text style={styles.libraryToolsLabel}>{t.sources}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolChips}>
-                  <Pressable onPress={() => setSourceFilter('all')} style={[styles.toolChip, sourceFilter === 'all' && styles.toolChipActive]}>
+                  <Pressable onPress={() => setSourceFilter('all')} style={[styles.toolChip, sourceFilter === 'all' && [styles.toolChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}28` }]]}>
                     <Text style={[styles.toolChipText, sourceFilter === 'all' && styles.toolChipTextActive]}>{t.allSources}</Text>
                   </Pressable>
                   {sourceFolders.map(folder => {
                     const id = `folder:${folder}`;
                     return (
-                      <Pressable key={id} onPress={() => setSourceFilter(id)} style={[styles.toolChip, sourceFilter === id && styles.toolChipActive]}>
+                      <Pressable key={id} onPress={() => setSourceFilter(id)} style={[styles.toolChip, sourceFilter === id && [styles.toolChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}28` }]]}>
                         <Text numberOfLines={1} style={[styles.toolChipText, sourceFilter === id && styles.toolChipTextActive]}>{folder}</Text>
                       </Pressable>
                     );
                   })}
                   {tracks.some(track => !track.sourceFolder) && (
-                    <Pressable onPress={() => setSourceFilter('imported')} style={[styles.toolChip, sourceFilter === 'imported' && styles.toolChipActive]}>
+                    <Pressable onPress={() => setSourceFilter('imported')} style={[styles.toolChip, sourceFilter === 'imported' && [styles.toolChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}28` }]]}>
                       <Text style={[styles.toolChipText, sourceFilter === 'imported' && styles.toolChipTextActive]}>{t.importedFiles}</Text>
                     </Pressable>
                   )}
@@ -934,9 +1105,12 @@ async function importMusicFolder() {
   const playStateLabel = playback.playing ? 'Ⅱ' : '▶';
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="light-content" backgroundColor={C.background} />
-      <View style={styles.appRoot}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: profile.backgroundColor || C.background }]} edges={['top', 'bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor={profile.backgroundColor || C.background} />
+      <ImageBackground source={profile.backgroundImageUri ? { uri: profile.backgroundImageUri } : undefined} imageStyle={{ opacity: profile.backgroundImageUri ? 0.55 : 0 }} style={[styles.appRoot, { backgroundColor: profile.backgroundColor || C.background }]} resizeMode="cover">
+        <View pointerEvents="none" style={[styles.backgroundShade, { backgroundColor: profile.backgroundImageUri ? 'rgba(5,4,8,0.48)' : 'transparent' }]} />
+        <SeasonalEffects season={profile.season} />
+        <View style={styles.foreground}>
         <View style={styles.topBar}>
           <View style={styles.brandMark}><Image source={require('./assets/desktop-logo.png')} style={styles.brandMarkImage} resizeMode="contain" /></View>
           <View style={styles.brandCopy}>
@@ -944,10 +1118,10 @@ async function importMusicFolder() {
             <Text style={styles.brandEdition}>{t.edition}</Text>
           </View>
           <View style={styles.topSpacer} />
-          <Pressable onPress={() => setScreen('settings')} style={styles.topAction}><Text style={styles.topActionGlyph}>⚙</Text></Pressable>
+          <Pressable onPress={() => setScreen('settings')} style={[styles.topAction, { borderColor: `${accentColor}66` }]}><Text style={[styles.topActionGlyph, { color: accentColor }]}>⚙</Text></Pressable>
         </View>
 
-        <View style={styles.content}>
+        <Animated.View style={[styles.content, { opacity: screenAnim, transform: [{ translateX: screenAnim.interpolate({ inputRange: [0, 1], outputRange: [screen === 'library' ? -12 : 12, 0] }) }] }]} onTouchStart={event => { swipeTouchStart.current = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY, localY: event.nativeEvent.pageY }; }} onTouchEnd={event => { if (swipeTouchStart.current) navigateSwipe(event.nativeEvent.pageX - swipeTouchStart.current.x, event.nativeEvent.pageY - swipeTouchStart.current.y, swipeTouchStart.current.localY); swipeTouchStart.current = null; }}>
           {screen === 'library' && (
             <FlatList
               data={visibleTracks}
@@ -963,6 +1137,11 @@ async function importMusicFolder() {
                 </View>
               )}
               contentContainerStyle={styles.libraryListContent}
+              initialNumToRender={12}
+              maxToRenderPerBatch={8}
+              windowSize={7}
+              removeClippedSubviews={Platform.OS === 'android'}
+              keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             />
           )}
@@ -976,7 +1155,7 @@ async function importMusicFolder() {
               {currentTrack ? (
                 <>
                   <View style={styles.playerArtworkFrame}>
-                    <Artwork size={248} title={currentTrack.title} />
+                    <Artwork size={248} title={currentTrack.title} imageUri={currentTrack.artworkUri} />
                   </View>
                   <View style={styles.playerTrackInfo}>
                     <Text numberOfLines={2} style={styles.playerTrackTitle}>{currentTrack.title}</Text>
@@ -1009,25 +1188,25 @@ async function importMusicFolder() {
                       }}
                     >
                       <View style={styles.seekTrack}>
-                        <View style={[styles.seekProgress, { width: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
-                        <View style={[styles.seekKnob, { left: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
+                        <View style={[styles.seekProgress, { backgroundColor: accentColor, width: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
+                        <View style={[styles.seekKnob, { borderColor: accentColor, left: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
                       </View>
                     </View>
                     <View style={styles.seekLabels}><Text style={styles.seekTime}>{formatTime(playback.currentTime)}</Text><Text style={styles.seekTime}>{formatTime(playback.duration)}</Text></View>
                   </View>
                   <View style={styles.transportRow}>
-                    <ActionButton label="⤨" active={shuffle} onPress={() => setShuffle(value => !value)} accessibilityLabel={t.shuffle} />
-                    <ActionButton label="⏮" onPress={previousTrack} accessibilityLabel={t.previous} />
-                    <Pressable onPress={togglePlayback} style={styles.mainPlayButton} accessibilityRole="button" accessibilityLabel={playback.playing ? t.pause : t.play}>
+                    <ActionButton label="⤨" active={shuffle} onPress={() => setShuffle(value => !value)} accessibilityLabel={t.shuffle} accentColor={accentColor} />
+                    <ActionButton label="⏮" onPress={previousTrack} accessibilityLabel={t.previous} accentColor={accentColor} />
+                    <Pressable onPress={togglePlayback} style={[styles.mainPlayButton, { backgroundColor: accentColor, width: 78, height: 78, borderRadius: 27 }]} accessibilityRole="button" accessibilityLabel={playback.playing ? t.pause : t.play}>
                       <Text style={styles.mainPlayGlyph}>{playStateLabel}</Text>
                     </Pressable>
-                    <ActionButton label="⏭" onPress={nextTrack} accessibilityLabel={t.next} />
-                    <ActionButton label={repeatMode === 'single' ? '↻¹' : '↻'} active={repeatMode !== 'none'} onPress={cycleRepeat} accessibilityLabel={repeatMode === 'none' ? t.repeatOff : repeatMode === 'all' ? t.repeatAll : t.repeatOne} />
+                    <ActionButton label="⏭" onPress={nextTrack} accessibilityLabel={t.next} accentColor={accentColor} />
+                    <ActionButton label={repeatMode === 'single' ? '↻¹' : '↻'} active={repeatMode !== 'none'} onPress={cycleRepeat} accessibilityLabel={repeatMode === 'none' ? t.repeatOff : repeatMode === 'all' ? t.repeatAll : t.repeatOne} accentColor={accentColor} />
                   </View>
                   <Text style={styles.repeatHint}>{repeatMode === 'none' ? t.repeatOff : repeatMode === 'all' ? t.repeatAll : t.repeatOne}</Text>
                   <View style={styles.queueHeader}><Text style={styles.eyebrow}>{t.queue}</Text><Text style={styles.queueCount}>{queueTracks.length}</Text></View>
                   {queueTracks.slice(Math.max(0, playback.currentIndex), Math.max(0, playback.currentIndex) + 5).map((track, index) => (
-                    <TrackRow key={track.id} track={track} index={index} active={currentTrackId === track.id} language={language} onPlay={() => playTrack(track, queueIds)} onFavorite={() => toggleFavorite(track.id)} onAdd={() => openAddToPlaylist(track.id)} />
+                    <TrackRow key={track.id} track={track} index={index} active={currentTrackId === track.id} language={language} playCount={Number(playStats[track.id]?.count) || 0} accentColor={accentColor} panelBackground={panelBackground} onPlay={() => playTrack(track, queueIds)} onFavorite={() => toggleFavorite(track.id)} onAdd={() => openAddToPlaylist(track.id)} />
                   ))}
                 </>
               ) : (
@@ -1046,24 +1225,40 @@ async function importMusicFolder() {
               <View style={styles.screenHeading}>
                 <View>
                   <Text style={styles.eyebrow}>{t.collection}</Text>
-                  <Text style={styles.screenTitle}>{t.playlists}<Text style={styles.titleDot}>.</Text></Text>
+                  <Text style={styles.screenTitle}>{t.playlists}<Text style={[styles.titleDot, { color: accentColor }]}>.</Text></Text>
                   <Text style={styles.screenSubtitle}>{playlists.length} · {t.tracks}</Text>
                 </View>
                 <Pressable onPress={openCreatePlaylist} style={styles.importCircle}><Text style={styles.importPlus}>＋</Text></Pressable>
               </View>
-              {playlistDetail ? (
+              {selectedSmartPlaylist ? (
+                <>
+                  <Pressable onPress={() => setSelectedSmartPlaylist(null)} style={styles.backButton}><Text style={styles.backButtonText}>‹  {t.back}</Text></Pressable>
+                  <Text style={styles.playlistDetailTitle}>{smartTitle}</Text>
+                  <Text style={styles.screenSubtitle}>{smartTracks.length} {t.tracks}</Text>
+                  {smartTracks.map((track, index) => <TrackRow key={track.id} track={track} index={index} active={currentTrackId === track.id} language={language} playCount={Number(playStats[track.id]?.count) || 0} accentColor={accentColor} panelBackground={panelBackground} onPlay={() => playTrack(track, smartTracks.map(item => item.id))} onFavorite={() => toggleFavorite(track.id)} onAdd={() => openAddToPlaylist(track.id)} />)}
+                  {selectedSmartPlaylist === 'frequent' && !smartTracks.length && <Text style={styles.emptySubtitle}>{t.noPlayed}</Text>}
+                </>
+              ) : playlistDetail ? (
                 <>
                   <Pressable onPress={() => setSelectedPlaylistId(null)} style={styles.backButton}><Text style={styles.backButtonText}>‹  {t.back}</Text></Pressable>
                   <Text style={styles.playlistDetailTitle}>{playlistDetail.name}</Text>
                   <Text style={styles.screenSubtitle}>{playlistDetail.trackIds.length} {t.playlistTracks}</Text>
                   {playlistDetail.trackIds.map((id, index) => {
                     const track = tracks.find(item => item.id === id);
-                    return track ? <TrackRow key={id} track={track} index={index} active={currentTrackId === id} language={language} onPlay={() => playPlaylistTrack(track)} onFavorite={() => toggleFavorite(id)} onAdd={() => openAddToPlaylist(id)} /> : null;
+                    return track ? <TrackRow key={id} track={track} index={index} active={currentTrackId === id} language={language} playCount={Number(playStats[id]?.count) || 0} accentColor={accentColor} panelBackground={panelBackground} onPlay={() => playPlaylistTrack(track)} onFavorite={() => toggleFavorite(id)} onAdd={() => openAddToPlaylist(id)} /> : null;
                   })}
                   {!playlistDetail.trackIds.length && <Text style={styles.emptySubtitle}>{t.emptyPlaylist}</Text>}
                 </>
               ) : (
                 <>
+                  <Pressable onPress={() => openSmartPlaylist('recent')} style={[styles.playlistCard, { borderColor: `${accentColor}70`, backgroundColor: panelBackground }]}>
+                    <View style={[styles.playlistArtwork, { borderColor: accentColor }]}><Text style={[styles.playlistArtworkGlyph, { color: accentColor }]}>◷</Text></View>
+                    <View style={styles.playlistCopy}><Text style={styles.playlistName}>{t.smartRecent}</Text><Text style={styles.playlistCount}>{recentSmartTracks.length} {t.tracks}</Text></View><Text style={[styles.playlistArrow, { color: accentColor }]}>›</Text>
+                  </Pressable>
+                  <Pressable onPress={() => openSmartPlaylist('frequent')} style={[styles.playlistCard, { borderColor: `${accentColor}70`, backgroundColor: panelBackground }]}>
+                    <View style={[styles.playlistArtwork, { borderColor: accentColor }]}><Text style={[styles.playlistArtworkGlyph, { color: accentColor }]}>♨</Text></View>
+                    <View style={styles.playlistCopy}><Text style={styles.playlistName}>{t.smartFrequent}</Text><Text style={styles.playlistCount}>{frequentSmartTracks.length} {t.tracks}</Text></View><Text style={[styles.playlistArrow, { color: accentColor }]}>›</Text>
+                  </Pressable>
                   {playlists.map(item => (
                     <Pressable key={item.id} onPress={() => openPlaylist(item)} style={({ pressed }) => [styles.playlistCard, pressed && styles.pressed]}>
                       <View style={styles.playlistArtwork}><Text style={styles.playlistArtworkGlyph}>♫</Text></View>
@@ -1087,52 +1282,117 @@ async function importMusicFolder() {
           {screen === 'settings' && (
             <ScrollView contentContainerStyle={styles.simpleScreen} showsVerticalScrollIndicator={false}>
               <View style={styles.screenHeading}>
-                <View><Text style={styles.eyebrow}>FOXSMUSIC MOBILE</Text><Text style={styles.screenTitle}>{t.settings}<Text style={styles.titleDot}>.</Text></Text></View>
+                <View><Text style={styles.eyebrow}>{t.profile}</Text><Text style={styles.screenTitle}>{t.settings}<Text style={[styles.titleDot, { color: accentColor }]}>.</Text></Text></View>
               </View>
-              <View style={styles.settingsCard}>
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground, borderColor: `${accentColor}66` }]}>
+                <Text style={styles.settingsLabel}>{t.profile}</Text>
+                <View style={styles.profileRow}>
+                  <View style={[styles.profileAvatar, { borderColor: accentColor }]}>
+                    {profile.avatarUri ? <Image source={{ uri: profile.avatarUri }} style={styles.profileAvatarImage} /> : <Image source={require('./assets/foxsmusic-logo.png')} style={styles.profileAvatarImage} resizeMode="contain" />}
+                  </View>
+                  <View style={styles.profileNameWrap}>
+                    <TextInput value={profileNameInput} onChangeText={value => { setProfileNameInput(value); setProfile(current => ({ ...current, name: value })); }} onEndEditing={() => setProfile(current => ({ ...current, name: profileNameInput.trim() || DEFAULT_PROFILE.name }))} placeholder={t.profileName} placeholderTextColor={C.subtle} selectionColor={accentColor} style={styles.profileNameInput} maxLength={32} />
+                    <Text style={styles.settingsDescription}>FoxsMusic · Android Edition</Text>
+                  </View>
+                </View>
+                <View style={styles.settingsButtonRow}>
+                  <Pressable onPress={() => pickProfileImage('avatar')} style={[styles.settingsActionButton, { borderColor: accentColor }]}><Text style={[styles.settingsActionText, { color: accentColor }]}>{t.chooseAvatar}</Text></Pressable>
+                  {profile.avatarUri && <Pressable onPress={() => removeProfileImage('avatar')} style={styles.settingsActionButton}><Text style={styles.settingsActionText}>{t.removeAvatar}</Text></Pressable>}
+                </View>
+              </View>
+
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.language}</Text>
                 <View style={styles.languageRow}>
                   {['ru', 'en', 'de'].map(code => (
-                    <Pressable key={code} onPress={() => setLanguage(code)} style={[styles.languageChip, language === code && styles.languageChipActive]}>
+                    <Pressable key={code} onPress={() => setLanguage(code)} style={[styles.languageChip, { minHeight: 46, minWidth: 58, justifyContent: 'center' }, language === code && [styles.languageChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}30` }]]}>
                       <Text style={[styles.languageChipText, language === code && styles.languageChipTextActive]}>{code.toUpperCase()}</Text>
                     </Pressable>
                   ))}
                 </View>
               </View>
-              <View style={styles.settingsCard}>
+
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground, borderColor: `${accentColor}66` }]}>
+                <Text style={styles.settingsLabel}>{t.appearance}</Text>
+                <Text style={styles.settingsSubLabel}>{t.accentColor}</Text>
+                <View style={styles.colorSwatches}>
+                  {ACCENT_PRESETS.map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={color} onPress={() => { setProfile(current => ({ ...current, accentColor: color })); setColorInput(color); }} style={[styles.colorSwatch, { backgroundColor: color }, profile.accentColor === color && styles.colorSwatchActive]} />)}
+                </View>
+                <Text style={styles.settingsSubLabel}>{t.customColor}</Text>
+                <View style={styles.customColorRow}>
+                  <TextInput value={colorInput} onChangeText={setColorInput} autoCapitalize="characters" maxLength={7} placeholder="#F12743" placeholderTextColor={C.subtle} style={[styles.colorInput, { borderColor: accentColor }]} />
+                  <Pressable onPress={applyCustomColor} style={[styles.settingsActionButton, { borderColor: accentColor, backgroundColor: `${accentColor}22` }]}><Text style={[styles.settingsActionText, { color: accentColor }]}>{t.applyColor}</Text></Pressable>
+                </View>
+                <Text style={styles.settingsSubLabel}>{t.backgroundColor}</Text>
+                <View style={styles.colorSwatches}>
+                  {BACKGROUND_PRESETS.map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={color} onPress={() => setProfile(current => ({ ...current, backgroundColor: color }))} style={[styles.colorSwatch, { backgroundColor: color }, profile.backgroundColor === color && [styles.colorSwatchActive, { borderColor: accentColor }]]} />)}
+                </View>
+                <Text style={styles.settingsSubLabel}>{t.panelStyle}</Text>
+                <View style={styles.languageRow}>
+                  {['classic', 'soft', 'glass'].map((styleId, index) => {
+                    const label = [t.styleClassic, t.styleSoft, t.styleGlass][index];
+                    return <Pressable key={styleId} onPress={() => setProfile(current => ({ ...current, panelStyle: styleId }))} style={[styles.languageChip, { minHeight: 46, flex: 1, justifyContent: 'center' }, profile.panelStyle === styleId && [styles.languageChipActive, { borderColor: accentColor, backgroundColor: `${accentColor}30` }]]}><Text style={[styles.languageChipText, profile.panelStyle === styleId && styles.languageChipTextActive]}>{label}</Text></Pressable>;
+                  })}
+                </View>
+              </View>
+
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
+                <Text style={styles.settingsLabel}>{t.season}</Text>
+                <View style={styles.seasonGrid}>
+                  {[['none', t.noSeason, '◌'], ['halloween', t.halloween, '🎃'], ['christmas', t.christmas, '❄'], ['birthday', t.birthday, '🎂']].map(([id, label, glyph]) => (
+                    <Pressable key={id} onPress={() => setProfile(current => ({ ...current, season: id }))} style={[styles.seasonChoice, profile.season === id && [styles.seasonChoiceActive, { borderColor: accentColor }]]}>
+                      <Text style={styles.seasonGlyph}>{glyph}</Text><Text style={styles.seasonLabel}>{label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.settingsDescription}>{t.swipeHint}</Text>
+              </View>
+
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
+                <Text style={styles.settingsLabel}>{t.customBackground}</Text>
+                <Text style={styles.settingsDescription}>{t.customBackground}</Text>
+                <View style={styles.settingsButtonRow}>
+                  <Pressable onPress={() => pickProfileImage('background')} style={[styles.settingsActionButton, { borderColor: accentColor }]}><Text style={[styles.settingsActionText, { color: accentColor }]}>{t.chooseBackground}</Text></Pressable>
+                  {profile.backgroundImageUri && <Pressable onPress={() => removeProfileImage('background')} style={styles.settingsActionButton}><Text style={styles.settingsActionText}>{t.removeBackground}</Text></Pressable>}
+                </View>
+                {profile.backgroundImageUri && <Image source={{ uri: profile.backgroundImageUri }} style={styles.backgroundPreview} resizeMode="cover" />}
+              </View>
+
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.storage}</Text>
                 <Text style={styles.settingsDescription}>{t.storageHint}</Text>
               </View>
-              <View style={styles.settingsCard}>
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.background}</Text>
                 <Text style={styles.settingsDescription}>{t.backgroundOn}</Text>
               </View>
-              <View style={styles.settingsCard}>
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.supported}</Text>
                 <Text style={styles.settingsDescription}>MP3 · M4A · AAC · WAV · FLAC · OGG · OPUS</Text>
               </View>
-              <View style={styles.settingsCard}>
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.about}</Text>
-                <Text style={styles.settingsDescription}>{t.version}</Text>
+                <Text style={styles.settingsDescription}>{t.version} · {profile.name || DEFAULT_PROFILE.name}</Text>
                 <Text style={styles.settingsDescription}>FoxsMusic Desktop companion · MrArtyomRedDarkFox</Text>
               </View>
+              <Pressable onPress={resetProfile} style={[styles.resetProfileButton, { borderColor: accentColor }]}><Text style={[styles.resetProfileText, { color: accentColor }]}>{t.resetProfile}</Text></Pressable>
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
 
         {currentTrack && screen !== 'player' && (
-          <Pressable onPress={() => setScreen('player')} style={styles.miniPlayer}>
-            <Artwork size={42} title={currentTrack.title} />
+          <Pressable onPress={() => setScreen('player')} style={[styles.miniPlayer, { backgroundColor: `${accentColor}18`, borderTopColor: `${accentColor}66` }]}>
+            <Artwork size={48} title={currentTrack.title} imageUri={currentTrack.artworkUri} />
             <View style={styles.miniPlayerCopy}>
               <Text numberOfLines={1} style={styles.miniPlayerTitle}>{currentTrack.title}</Text>
               <Text numberOfLines={1} style={styles.miniPlayerArtist}>{currentTrack.artist || t.unknownArtist}</Text>
             </View>
-            <Pressable onPress={togglePlayback} hitSlop={10} style={styles.miniPlayButton}><Text style={styles.miniPlayGlyph}>{playStateLabel}</Text></Pressable>
+            <Pressable onPress={togglePlayback} hitSlop={10} style={[styles.miniPlayButton, { borderRadius: 12, borderWidth: 1, borderColor: `${accentColor}55` }]}><Text style={[styles.miniPlayGlyph, { color: accentColor }]}>{playStateLabel}</Text></Pressable>
             <Pressable onPress={nextTrack} hitSlop={10} style={styles.miniNextButton}><Text style={styles.miniNextGlyph}>⏭</Text></Pressable>
           </Pressable>
         )}
 
-        <View style={styles.bottomNav}>
+        <View style={[styles.bottomNav, { backgroundColor: profile.panelStyle === 'glass' ? 'rgba(12,9,13,0.78)' : profile.backgroundColor || '#0C090D', borderTopColor: `${accentColor}44` }]}>
           {[
             ['library', '♫', t.library],
             ['playlists', '≡', t.playlists],
@@ -1140,13 +1400,14 @@ async function importMusicFolder() {
             ['settings', '⚙', t.settings],
           ].map(([id, glyph, label]) => (
             <Pressable key={id} onPress={() => setScreen(id)} style={styles.navItem}>
-              <Text style={[styles.navGlyph, screen === id && styles.navGlyphActive]}>{glyph}</Text>
+              <Text style={[styles.navGlyph, screen === id && styles.navGlyphActive, screen === id && { color: accentColor }]}>{glyph}</Text>
               <Text style={[styles.navLabel, screen === id && styles.navLabelActive]}>{label}</Text>
-              {screen === id && <View style={styles.navIndicator} />}
+              {screen === id && <View style={[styles.navIndicator, { backgroundColor: accentColor }]} />}
             </Pressable>
           ))}
         </View>
-      </View>
+        </View>
+      </ImageBackground>
 
       <Modal visible={playlistModalVisible} transparent animationType="fade" onRequestClose={() => setPlaylistModalVisible(false)}>
         <View style={styles.modalBackdrop}>
@@ -1207,7 +1468,7 @@ const styles = StyleSheet.create({
   loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
   loadingMascot: { width: 220, height: 220, marginBottom: 2 },
   loadingBrand: { marginTop: 18, color: C.text, fontSize: 19, fontWeight: '900', letterSpacing: 4 },
-  topBar: { height: 70, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#281820' },
+  topBar: { height: 76, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#281820' },
   brandMark: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#260A13', borderWidth: 1, borderColor: '#792033', alignItems: 'center', justifyContent: 'center', shadowColor: C.red, shadowOpacity: 0.23, shadowRadius: 13, elevation: 5 },
   brandMarkText: { color: C.red, fontSize: 25, fontWeight: '900', fontStyle: 'italic' },
   brandMarkImage: { width: 38, height: 38 },
@@ -1219,6 +1480,10 @@ const styles = StyleSheet.create({
   topAction: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: C.panel, borderWidth: 1, borderColor: C.line },
   topActionGlyph: { color: C.muted, fontSize: 20 },
   content: { flex: 1 },
+  foreground: { flex: 1 },
+  backgroundShade: { ...StyleSheet.absoluteFillObject },
+  seasonLayer: { ...StyleSheet.absoluteFillObject, zIndex: 0, overflow: 'hidden' },
+  seasonParticle: { position: 'absolute', top: 0, fontSize: 19, color: '#F7D7E1' },
   libraryListContent: { paddingHorizontal: 18, paddingBottom: 24 },
   simpleScreen: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 28 },
   compactHero: { minHeight: 108, marginTop: 12, marginBottom: 4, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#702039', backgroundColor: '#10070B', flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingVertical: 10, position: 'relative' },
@@ -1242,10 +1507,10 @@ const styles = StyleSheet.create({
   screenTitle: { color: C.text, fontWeight: '900', fontSize: 31, letterSpacing: -1.1, marginTop: 3 },
   titleDot: { color: C.red },
   screenSubtitle: { color: C.muted, fontSize: 11, marginTop: 4 },
-  importCircle: { width: 50, height: 50, borderRadius: 17, backgroundColor: '#3A0D1A', borderWidth: 1, borderColor: '#8F2036', alignItems: 'center', justifyContent: 'center' },
+  importCircle: { width: 58, height: 58, borderRadius: 17, backgroundColor: '#3A0D1A', borderWidth: 1, borderColor: '#8F2036', alignItems: 'center', justifyContent: 'center' },
   importPlus: { color: '#FFF1F4', fontSize: 30, lineHeight: 34, marginTop: -2 },
-  importBanner: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: '#1A0D13', borderRadius: 16, borderWidth: 1, borderColor: '#5A1B2B', marginBottom: 14 },
-  importBannerIcon: { width: 45, height: 45, borderRadius: 13, backgroundColor: '#3A0C19', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  importBanner: { minHeight: 82, flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1A0D13', borderRadius: 16, borderWidth: 1, borderColor: '#5A1B2B', marginBottom: 14 },
+  importBannerIcon: { width: 54, height: 54, borderRadius: 13, backgroundColor: '#3A0C19', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   importBannerGlyph: { color: C.red, fontSize: 25, fontWeight: '800' },
   importBannerTitle: { color: C.text, fontSize: 14, fontWeight: '800' },
   importBannerSubtitle: { color: C.muted, fontSize: 10, marginTop: 4 },
@@ -1267,7 +1532,7 @@ const styles = StyleSheet.create({
   filterText: { color: C.muted, fontSize: 10, fontWeight: '700' },
   filterTextActive: { color: '#FFF0F3' },
   listCount: { color: C.subtle, marginLeft: 'auto', fontSize: 10 },
-  trackRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 8, marginBottom: 5, borderRadius: 13, backgroundColor: '#100D12', borderWidth: 1, borderColor: '#211820' },
+  trackRow: { minHeight: 84, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 8, marginBottom: 5, borderRadius: 13, backgroundColor: '#100D12', borderWidth: 1, borderColor: '#211820' },
   trackRowActive: { backgroundColor: '#1E0D15', borderColor: '#6C2031' },
   trackMain: { flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 },
   artwork: { backgroundColor: '#1B0C14', borderWidth: 1, borderColor: '#672034', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' },
@@ -1279,10 +1544,10 @@ const styles = StyleSheet.create({
   trackTitleActive: { color: '#FF6B80' },
   trackArtist: { color: C.muted, fontSize: 10, marginTop: 5 },
   trackMeta: { color: C.subtle, fontSize: 8, marginTop: 4 },
-  rowIconButton: { width: 33, height: 40, alignItems: 'center', justifyContent: 'center' },
+  rowIconButton: { width: 46, height: 48, alignItems: 'center', justifyContent: 'center' },
   rowIcon: { color: '#9E8992', fontSize: 19 },
   favoriteOn: { color: C.red },
-  actionButton: { width: 38, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: C.panel, borderWidth: 1, borderColor: C.line },
+  actionButton: { width: 50, height: 52, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: C.panel, borderWidth: 1, borderColor: C.line },
   actionButtonSmall: { width: 31, height: 35 },
   actionButtonActive: { borderColor: '#8B2035', backgroundColor: '#3A101D' },
   actionButtonText: { color: C.muted, fontSize: 17, fontWeight: '800' },
@@ -1306,10 +1571,10 @@ const styles = StyleSheet.create({
   playerHeart: { position: 'absolute', right: 0, top: 3, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   playerHeartText: { color: C.muted, fontSize: 24 },
   seekBlock: { marginTop: 25, marginBottom: 17 },
-  seekTouchArea: { height: 48, justifyContent: 'center', overflow: 'visible' },
-  seekTrack: { height: 10, borderRadius: 10, backgroundColor: '#38242D', justifyContent: 'center', overflow: 'visible' },
-  seekProgress: { height: 10, borderRadius: 10, backgroundColor: C.red },
-  seekKnob: { position: 'absolute', marginLeft: -11, width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFF0F4', borderWidth: 3, borderColor: C.red, elevation: 3 },
+  seekTouchArea: { height: 68, justifyContent: 'center', overflow: 'visible' },
+  seekTrack: { height: 14, borderRadius: 10, backgroundColor: '#38242D', justifyContent: 'center', overflow: 'visible' },
+  seekProgress: { height: 14, borderRadius: 10, backgroundColor: C.red },
+  seekKnob: { position: 'absolute', marginLeft: -13, width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFF0F4', borderWidth: 3, borderColor: C.red, elevation: 3 },
   seekLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   seekTime: { color: C.subtle, fontSize: 11, fontVariant: ['tabular-nums'] },
   transportRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
@@ -1341,17 +1606,39 @@ const styles = StyleSheet.create({
   miniPlayerCopy: { flex: 1, marginLeft: 10, minWidth: 0 },
   miniPlayerTitle: { color: C.text, fontSize: 11, fontWeight: '900' },
   miniPlayerArtist: { color: C.muted, fontSize: 9, marginTop: 3 },
-  miniPlayButton: { width: 37, height: 37, alignItems: 'center', justifyContent: 'center' },
+  miniPlayButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   miniPlayGlyph: { color: C.red, fontSize: 21, fontWeight: '900' },
-  miniNextButton: { width: 34, height: 37, alignItems: 'center', justifyContent: 'center' },
+  miniNextButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   miniNextGlyph: { color: C.muted, fontSize: 17 },
-  bottomNav: { height: 66, flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#0C090D', borderTopWidth: 1, borderTopColor: '#2A1B23', paddingHorizontal: 4 },
-  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative', gap: 2 },
+  bottomNav: { height: 76, flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#0C090D', borderTopWidth: 1, borderTopColor: '#2A1B23', paddingHorizontal: 4 },
+  navItem: { flex: 1, minHeight: 68, alignItems: 'center', justifyContent: 'center', position: 'relative', gap: 2 },
   navGlyph: { fontSize: 20, color: C.subtle, height: 23 },
   navGlyphActive: { color: C.red },
   navLabel: { color: C.subtle, fontSize: 8, fontWeight: '700' },
   navLabelActive: { color: '#F7CFD7' },
   navIndicator: { position: 'absolute', bottom: 0, width: 25, height: 2, backgroundColor: C.red, borderRadius: 2 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  profileAvatar: { width: 64, height: 64, borderRadius: 21, borderWidth: 1, backgroundColor: '#160A11', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  profileAvatarImage: { width: '100%', height: '100%' },
+  profileNameWrap: { flex: 1, minWidth: 0 },
+  profileNameInput: { height: 44, color: C.text, fontSize: 14, fontWeight: '900', borderBottomWidth: 1, borderBottomColor: C.line },
+  settingsSubLabel: { color: C.muted, fontSize: 10, fontWeight: '800', marginTop: 14, marginBottom: 8 },
+  colorSwatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
+  colorSwatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: 'rgba(255,255,255,0.22)' },
+  colorSwatchActive: { borderWidth: 3, borderColor: '#FFFFFF', transform: [{ scale: 1.12 }] },
+  customColorRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  colorInput: { flex: 1, height: 46, borderRadius: 10, borderWidth: 1, backgroundColor: '#0B080C', color: C.text, paddingHorizontal: 12, fontSize: 13 },
+  settingsButtonRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  settingsActionButton: { minHeight: 46, paddingHorizontal: 13, borderRadius: 11, borderWidth: 1, borderColor: C.line, justifyContent: 'center', alignItems: 'center', backgroundColor: '#100B10' },
+  settingsActionText: { color: C.muted, fontSize: 10, fontWeight: '900' },
+  seasonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  seasonChoice: { width: '48%', minHeight: 75, borderRadius: 13, borderWidth: 1, borderColor: C.line, backgroundColor: '#100B10', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  seasonChoiceActive: { borderWidth: 2, backgroundColor: '#33121E' },
+  seasonGlyph: { fontSize: 22 },
+  seasonLabel: { color: C.text, fontSize: 10, fontWeight: '800' },
+  backgroundPreview: { width: '100%', height: 120, marginTop: 12, borderRadius: 12, borderWidth: 1, borderColor: C.line },
+  resetProfileButton: { minHeight: 52, borderRadius: 13, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 16, backgroundColor: '#160A10' },
+  resetProfileText: { fontSize: 11, fontWeight: '900' },
   modalBackdrop: { flex: 1, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: 'rgba(0,0,0,0.78)' },
   modalCard: { backgroundColor: '#1A1016', borderRadius: 20, borderWidth: 1, borderColor: '#702039', padding: 19 },
   modalTitle: { color: C.text, fontSize: 17, fontWeight: '900', marginBottom: 16 },

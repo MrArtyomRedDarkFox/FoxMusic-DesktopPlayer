@@ -85,3 +85,15 @@ mobile/
 On the Library screen, choose **Connect Music folder** and select the device's `Music` folder in the Android system folder picker. FoxsMusic stores the granted folder URI and scans that folder (including subfolders) after later launches, importing only files not already in the in-app library. You can select another folder again from the same row. Android requires the user to grant this folder access; the app does not silently scan the whole device.
 
 Audio files selected through the file picker are copied sequentially into FoxsMusic's private Documents storage. This avoids retaining short-lived picker-cache URIs as library entries.
+
+
+## FoxsMusic Mobile 0.3.0
+
+- Larger touch targets across the mobile UI and a 68 px playback seek area with a 26 px thumb.
+- Swipe navigation between Library, Playlists, Player and Settings, with a short fade/slide transition.
+- Smart playlists: Recently added and Most played. Play counts and last-played timestamps are stored separately from the track queue to avoid rebuilding playback when stats change.
+- Track rows show the source file date (creation timestamp where the platform provides it, otherwise the modification timestamp). For connected folders, FoxsMusic can use `cover.jpg`, `cover.jpeg`, `cover.png`, `folder.jpg`, `folder.png`, `album.jpg`, `album.png`, `front.jpg` or `front.png` in each album folder as the artwork. This is a folder-cover fallback; the current Expo MVP does not yet read embedded ID3/FLAC artwork or tags from every codec.
+- Profile settings: display name, avatar, accent color presets/custom HEX, background color, card style, seasonal effects (Halloween/Christmas/Birthday), a custom image background, image removal and a profile appearance reset.
+- Existing library, playlists and Music-folder permissions remain stored under the existing AsyncStorage keys and version-1 payload; new settings and playback statistics are additive.
+
+The custom background/avatar images are copied into the app-private Documents directory. Resetting the profile removes those copies but does not delete audio files, playlists or library metadata.

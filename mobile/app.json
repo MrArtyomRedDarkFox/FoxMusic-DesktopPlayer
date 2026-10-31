@@ -2,13 +2,13 @@
   "expo": {
     "name": "FoxsMusic",
     "slug": "foxsmusic-android",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.artyomreddarkfox.foxsmusic.mobile",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#08070a"
@@ -52,6 +52,7 @@
       "eas": {
         "projectId": "092d7caf-9463-42a8-a4ae-eb2a49b1cd39"
       }
-    }
+    },
+    "owner": "mrartyomreddarkfox"
   }
 }

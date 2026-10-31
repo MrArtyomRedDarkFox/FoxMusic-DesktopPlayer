@@ -88,8 +88,8 @@ test('player timeline has a large touch target, a larger thumb, and drag seeking
   assert.match(appSource, /PanResponder\.create/);
   assert.match(appSource, /onPanResponderMove/);
   assert.match(appSource, /styles\.seekTouchArea/);
-  assert.match(appSource, /seekTouchArea: \{ height: 48/);
-  assert.match(appSource, /seekKnob: \{[^}]*width: 22, height: 22/);
+  assert.match(appSource, /seekTouchArea: \{ height: 68/);
+  assert.match(appSource, /seekKnob: \{[^}]*width: 26, height: 26/);
   assert.match(appSource, /accessibilityRole=\"adjustable\"/);
 });
 
@@ -113,7 +113,45 @@ test('connected Music folder can be rescanned without reopening the system picke
 });
 
 test('mobile release versions are consistent and Android versionCode is incremented', () => {
-  assert.equal(packageConfig.version, '0.2.0');
-  assert.equal(appConfig.version, '0.2.0');
-  assert.equal(appConfig.android.versionCode, 5);
+  assert.equal(packageConfig.version, '0.3.0');
+  assert.equal(appConfig.version, '0.3.0');
+  assert.equal(appConfig.android.versionCode, 6);
+});
+
+
+test('profile appearance supports custom colors, backgrounds, avatar and seasonal modes', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  for (const token of ['backgroundImageUri', 'avatarUri', 'accentColor', 'backgroundColor', 'panelStyle', 'halloween', 'christmas', 'birthday', 'resetProfile', 'pickProfileImage']) {
+    assert.ok(appSource.includes(token), `missing profile feature token: ${token}`);
+  }
+});
+
+test('smart playlists and listening statistics are persisted', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /smartRecent/);
+  assert.match(appSource, /smartFrequent/);
+  assert.match(appSource, /playStats/);
+  assert.match(appSource, /lastPlayedAt/);
+});
+
+test('folder scan supports original folder cover images and file modification timestamps', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /cover\.jpg/);
+  assert.match(appSource, /artworkUri: folderArtwork/);
+  assert.match(appSource, /originalModifiedAt/);
+});
+
+test('app supports swipe navigation, screen transitions and optimized FlatList rendering', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /navigateSwipe/);
+  assert.match(appSource, /Animated\.timing/);
+  assert.match(appSource, /initialNumToRender/);
+  assert.match(appSource, /maxToRenderPerBatch/);
+});
+
+
+test('package and lockfile versions stay in sync for mobile release', () => {
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
+  assert.equal(lock.version, packageConfig.version);
+  assert.equal(lock.packages[''].version, packageConfig.version);
 });

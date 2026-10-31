@@ -57,6 +57,32 @@ function sortTracks(tracks, mode = 'recent') {
   });
 }
 
+
+function formatDateTime(value, language = 'ru') {
+  const timestamp = Number(value);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return '—';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '—';
+  const locale = language === 'ru' ? 'ru-RU' : language === 'de' ? 'de-DE' : 'en-US';
+  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
+function sortMostPlayed(tracks, playStats = {}) {
+  const items = Array.isArray(tracks) ? [...tracks] : [];
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+  return items.sort((a, b) => {
+    const sa = playStats[a?.id] || {};
+    const sb = playStats[b?.id] || {};
+    return (Number(sb.count) || 0) - (Number(sa.count) || 0)
+      || (Number(sb.lastPlayedAt) || 0) - (Number(sa.lastPlayedAt) || 0)
+      || collator.compare(String(a?.title || ''), String(b?.title || ''));
+  });
+}
+
+function isValidHexColor(value) {
+  return /^#[0-9a-f]{6}$/i.test(String(value || '').trim());
+}
+
 function createId(now = Date.now(), random = Math.random()) {
   return `${now.toString(36)}-${random.toString(36).slice(2, 10)}`;
 }
@@ -68,5 +94,8 @@ module.exports = {
   parseTrackName,
   formatTime,
   sortTracks,
+  sortMostPlayed,
+  formatDateTime,
+  isValidHexColor,
   createId
 };
