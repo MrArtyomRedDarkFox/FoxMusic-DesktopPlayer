@@ -113,9 +113,9 @@ test('connected Music folder can be rescanned without reopening the system picke
 });
 
 test('mobile release versions are consistent and Android versionCode is incremented', () => {
-  assert.equal(packageConfig.version, '0.3.0');
-  assert.equal(appConfig.version, '0.3.0');
-  assert.equal(appConfig.android.versionCode, 6);
+  assert.equal(packageConfig.version, '0.3.1');
+  assert.equal(appConfig.version, '0.3.1');
+  assert.equal(appConfig.android.versionCode, 7);
 });
 
 
@@ -154,4 +154,61 @@ test('package and lockfile versions stay in sync for mobile release', () => {
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
   assert.equal(lock.version, packageConfig.version);
   assert.equal(lock.packages[''].version, packageConfig.version);
+});
+
+
+test('embedded MP3 artwork parser is connected to both import and library repair', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  const coreSource = fs.readFileSync(path.join(root, 'src', 'core.js'), 'utf8');
+  assert.match(coreSource, /function parseId3v2Tag/);
+  assert.match(coreSource, /frameId === 'TIT2'/);
+  assert.match(coreSource, /frameId === 'TPE1'/);
+  assert.match(coreSource, /frameId === 'TALB'/);
+  assert.match(coreSource, /id === 'APIC'/);
+  assert.match(appSource, /await extractMp3Metadata\(destination, id\)/);
+  assert.match(appSource, /artworkUri: metadata\.artworkUri \|\| null/);
+  assert.match(appSource, /FoxsMusic: embedded MP3 tags could not be read/);
+});
+
+test('season mode changes the app palette and exposes themed particles', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /const SEASON_THEMES =/);
+  assert.match(appSource, /const seasonTheme = SEASON_THEMES\[profile\.season\]/);
+  assert.match(appSource, /const accentColor = seasonTheme\?\.accent/);
+  assert.match(appSource, /seasonAtmosphere/);
+  assert.match(appSource, /SeasonalEffects season=\{profile\.season\} theme=\{seasonTheme\}/);
+});
+
+test('player provides persisted playback speed, volume control and ten-second seeking', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /playlist\.playbackRate = playbackRate/);
+  assert.match(appSource, /playlist\.volume = Math\.max/);
+  assert.match(appSource, /playbackRate, volumePercent/);
+  assert.match(appSource, /seekBy\(-10\)/);
+  assert.match(appSource, /seekBy\(10\)/);
+  assert.match(appSource, /volumeResponder/);
+});
+
+test('horizontal swipe navigation does not capture vertical scrolling', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /onMoveShouldSetPanResponder: \(_, gesture\) => !playlistModalVisible/);
+  assert.match(appSource, /Math\.abs\(gesture\.dx\) > Math\.abs\(gesture\.dy\) \* 1\.6/);
+  assert.doesNotMatch(appSource, /onTouchStart=\{event => \{ swipeTouchStart/);
+});
+
+
+test('folder cover discovery calls the actual file-copy helper without shadowing it', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /async function copyFolderArtwork\(sourceUri, destinationUri\)/);
+  assert.match(appSource, /async function findAndCopyFolderArtwork\(entries, folderKey\)/);
+  assert.match(appSource, /const copiedUri = await copyFolderArtwork\(uri, destination\)/);
+  assert.match(appSource, /const folderArtwork = await findAndCopyFolderArtwork\(entries, directoryUri\)/);
+});
+
+test('season themes change the root background while custom background colors remain respected', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /halloween: \{ accent: '#F08A42', background: '#0D0809'/);
+  assert.match(appSource, /christmas: \{ accent: '#79C9E8', background: '#071019'/);
+  assert.match(appSource, /birthday: \{ accent: '#D59AD6', background: '#100B14'/);
+  assert.match(appSource, /const appBackgroundColor = seasonTheme && profile\.backgroundColor === DEFAULT_PROFILE\.backgroundColor/);
 });

@@ -10,6 +10,8 @@ const {
   sortTracks,
   sortMostPlayed,
   formatDateTime,
+  normalizeFileTimestamp,
+  parseId3v2Tag,
   isValidHexColor,
   createId
 } = require('../src/core');
@@ -104,4 +106,71 @@ test('validates six-digit HEX colors', () => {
   assert.equal(isValidHexColor('F12743'), false);
   assert.equal(isValidHexColor('#FFF'), false);
   assert.equal(isValidHexColor('#GGGGGG'), false);
+});
+
+
+test('normalizes source file timestamps expressed in seconds or milliseconds', () => {
+  assert.equal(normalizeFileTimestamp(1760000000), 1760000000000);
+  assert.equal(normalizeFileTimestamp(1760000000123), 1760000000123);
+  assert.equal(normalizeFileTimestamp(0), null);
+  assert.equal(normalizeFileTimestamp('invalid'), null);
+});
+
+test('reads ID3v2.3 title, artist, album and embedded APIC artwork', () => {
+  const frame = (id, payload) => {
+    const size = payload.length;
+    return [
+      ...Buffer.from(id, 'ascii'),
+      (size >>> 24) & 0xff, (size >>> 16) & 0xff, (size >>> 8) & 0xff, size & 0xff,
+      0, 0,
+      ...payload,
+    ];
+  };
+  const textFrame = (id, value) => frame(id, [0, ...Buffer.from(value, 'latin1')]);
+  const imageBytes = [0xff, 0xd8, 0xff, ...Array.from({ length: 96 }, (_, i) => i & 0xff)];
+  const apic = frame('APIC', [0, ...Buffer.from('image/jpeg', 'ascii'), 0, 3, 0, ...imageBytes]);
+  const frames = [
+    ...textFrame('TIT2', 'Night Drive'),
+    ...textFrame('TPE1', 'Fox Artist'),
+    ...textFrame('TALB', 'Midnight Album'),
+    ...apic,
+  ];
+  const tagSize = frames.length;
+  const syncSafe = [
+    (tagSize >> 21) & 0x7f,
+    (tagSize >> 14) & 0x7f,
+    (tagSize >> 7) & 0x7f,
+    tagSize & 0x7f,
+  ];
+  const tag = new Uint8Array([...Buffer.from('ID3', 'ascii'), 3, 0, 0, ...syncSafe, ...frames]);
+  const result = parseId3v2Tag(tag);
+  assert.equal(result.title, 'Night Drive');
+  assert.equal(result.artist, 'Fox Artist');
+  assert.equal(result.album, 'Midnight Album');
+  assert.equal(result.picture.mimeType, 'image/jpeg');
+  assert.deepEqual(Array.from(result.picture.data.slice(0, 3)), [0xff, 0xd8, 0xff]);
+});
+
+test('returns empty metadata for files without an ID3 header', () => {
+  assert.deepEqual(parseId3v2Tag(new Uint8Array([1, 2, 3, 4])), {
+    title: '', artist: '', album: '', picture: null,
+  });
+});
+
+
+test('reads ID3v2.2 title and artist frames', () => {
+  const frame = (id, payload) => [
+    ...Buffer.from(id, 'ascii'),
+    (payload.length >>> 16) & 0xff, (payload.length >>> 8) & 0xff, payload.length & 0xff,
+    ...payload,
+  ];
+  const title = frame('TT2', [0, ...Buffer.from('Old song', 'latin1')]);
+  const artist = frame('TP1', [0, ...Buffer.from('Old artist', 'latin1')]);
+  const frames = [...title, ...artist];
+  const size = frames.length;
+  const syncSafe = [(size >> 21) & 0x7f, (size >> 14) & 0x7f, (size >> 7) & 0x7f, size & 0x7f];
+  const tag = new Uint8Array([...Buffer.from('ID3', 'ascii'), 2, 0, 0, ...syncSafe, ...frames]);
+  const result = parseId3v2Tag(tag);
+  assert.equal(result.title, 'Old song');
+  assert.equal(result.artist, 'Old artist');
 });

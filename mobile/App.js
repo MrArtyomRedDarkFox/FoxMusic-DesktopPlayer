@@ -20,7 +20,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
+import { File, FileMode, Paths } from 'expo-file-system';
 import * as LegacyFileSystem from 'expo-file-system/legacy';
 import {
   requestNotificationPermissionsAsync,
@@ -28,16 +28,22 @@ import {
   useAudioPlaylist,
   useAudioPlaylistStatus,
 } from 'expo-audio';
-import { createId, formatTime, formatDateTime, isSupportedAudio, parseTrackName, sortTracks, sortMostPlayed, isValidHexColor } from './src/core';
+import { createId, formatTime, formatDateTime, isSupportedAudio, parseTrackName, sortTracks, sortMostPlayed, isValidHexColor, parseId3v2Tag, normalizeFileTimestamp } from './src/core';
 
 const STORAGE_KEY = 'foxsmusic-mobile-library-v1';
 const MUSIC_FOLDER_KEY = 'foxsmusic-mobile-music-folder-v1';
 const MAX_IMPORT_FILES = 250;
+const METADATA_REPAIR_BATCH = 40;
 const MAX_FOLDER_DEPTH = 8;
 const DEFAULT_PROFILE = { name: 'MrArtyomRedDarkFox', avatarUri: null, accentColor: '#F12743', backgroundColor: '#08070A', panelStyle: 'classic', season: 'none', backgroundImageUri: null };
 const ACCENT_PRESETS = ['#F12743', '#FF5A36', '#E43B7A', '#9A5BFF', '#477BFF', '#20A58A', '#E0A52B', '#E8E8EC'];
 const BACKGROUND_PRESETS = ['#08070A', '#100A13', '#16080D', '#111216', '#090E17'];
-const SEASONS = { none: [], halloween: ['🦇', '✦', '🕸'], christmas: ['❄', '✧', '❅'], birthday: ['✦', '🎊', '🍬'] };
+const SEASON_THEMES = {
+  halloween: { accent: '#F08A42', background: '#0D0809', panel: '#1B1218', panelSoft: '#28171D', atmosphere: 'rgba(114, 48, 20, 0.14)', particles: ['🦇', '✦', '🕸', '🕯', '✧'] },
+  christmas: { accent: '#79C9E8', background: '#071019', panel: '#111A22', panelSoft: '#172532', atmosphere: 'rgba(38, 94, 132, 0.15)', particles: ['❄', '✧', '❅', '✨', '❆'] },
+  birthday: { accent: '#D59AD6', background: '#100B14', panel: '#1D1420', panelSoft: '#291A2B', atmosphere: 'rgba(108, 60, 116, 0.15)', particles: ['🎊', '🍬', '✦', '🎂', '✧'] },
+};
+const SEASONS = { none: [], ...Object.fromEntries(Object.entries(SEASON_THEMES).map(([key, value]) => [key, value.particles])) };
 const C = {
   background: '#08070A',
   panel: '#141015',
@@ -72,7 +78,7 @@ const COPY = {
     alreadyAdded: 'Этот трек уже есть в плейлисте.', saved: 'Сохранено',
     language: 'Язык интерфейса', storage: 'Хранилище музыки', storageHint: 'Аудиофайлы копируются в приватную папку приложения. Полный доступ ко всем файлам телефона не запрашивается.',
     background: 'Фоновое воспроизведение', backgroundOn: 'Поддерживается через системное медиа-уведомление и экран блокировки.',
-    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.2.0 · Android',
+    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.3.1 · Android',
     importDone: 'Импорт завершён', imported: 'Добавлено файлов', skipped: 'Пропущено неподдерживаемых или повторных файлов',
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
@@ -80,7 +86,7 @@ const COPY = {
     smartRecent: 'НЕДАВНО ДОБАВЛЕННЫЕ', smartFrequent: 'ЧАСТО ПРОСЛУШИВАЕМЫЕ', playedTimes: 'прослушиваний', noPlayed: 'Пока нет статистики прослушиваний', sourceDate: 'Дата исходного файла',
     profile: 'ПРОФИЛЬ', profileName: 'Имя профиля', profileAvatar: 'Аватар профиля', chooseAvatar: 'Выбрать аватар', removeAvatar: 'Удалить аватар',
     appearance: 'ОФОРМЛЕНИЕ', accentColor: 'Основной цвет', backgroundColor: 'Цвет фона', panelStyle: 'Стиль карточек', styleClassic: 'Классический', styleSoft: 'Мягкий', styleGlass: 'Стекло', customColor: 'Свой HEX-цвет', applyColor: 'Применить',
-    season: 'Сезонный фон', noSeason: 'Отключён', halloween: 'Хеллоуин', christmas: 'Новый год', birthday: 'День рождения',
+    season: 'Сезонный фон', noSeason: 'Отключён', halloween: 'Хеллоуин', christmas: 'Новый год', birthday: 'День рождения', seasonPaletteHint: 'Сезон автоматически меняет акцент, оттенок панелей и фоновые эффекты. Твой основной цвет вернётся при отключении сезона.', artworkSettingsLabel: 'Обложки музыки', artworkHint: 'FoxsMusic читает встроенные обложки MP3 и ищет cover.jpg, folder.jpg и album.png в музыкальных папках. Для остальных форматов используются обложки папки.', speed: 'СКОРОСТЬ', volume: 'ГРОМКОСТЬ', back10: '−10 сек', forward10: '+10 сек',
     customBackground: 'Собственная картинка фона', chooseBackground: 'Выбрать изображение', removeBackground: 'Удалить изображение', resetProfile: 'Сбросить оформление и профиль', swipeHint: 'Листай экраны свайпом влево или вправо',
     back: 'Назад', emptyPlaylist: 'В этом плейлисте пока нет треков',
   },
@@ -103,7 +109,7 @@ const COPY = {
     alreadyAdded: 'This track is already in the playlist.', saved: 'Saved',
     language: 'Interface language', storage: 'Music storage', storageHint: 'Audio files are copied into the app private folder. Full access to phone storage is not requested.',
     background: 'Background playback', backgroundOn: 'Supported through the system media notification and lock screen.',
-    supported: 'Supported formats', about: 'About', version: 'Version 0.2.0 · Android',
+    supported: 'Supported formats', about: 'About', version: 'Version 0.3.1 · Android',
     importDone: 'Import complete', imported: 'Files added', skipped: 'Unsupported or duplicate files skipped',
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
@@ -111,7 +117,7 @@ const COPY = {
     smartRecent: 'RECENTLY ADDED', smartFrequent: 'MOST PLAYED', playedTimes: 'plays', noPlayed: 'No listening stats yet', sourceDate: 'Source file date',
     profile: 'PROFILE', profileName: 'Profile name', profileAvatar: 'Profile avatar', chooseAvatar: 'Choose avatar', removeAvatar: 'Remove avatar',
     appearance: 'APPEARANCE', accentColor: 'Accent color', backgroundColor: 'Background color', panelStyle: 'Card style', styleClassic: 'Classic', styleSoft: 'Soft', styleGlass: 'Glass', customColor: 'Custom HEX color', applyColor: 'Apply',
-    season: 'Seasonal background', noSeason: 'Off', halloween: 'Halloween', christmas: 'Christmas', birthday: 'Birthday',
+    season: 'Seasonal background', noSeason: 'Off', halloween: 'Halloween', christmas: 'Christmas', birthday: 'Birthday', seasonPaletteHint: 'The season changes the accent, panel tint and background effects. Your custom accent returns when the season is turned off.', artworkSettingsLabel: 'Music artwork', artworkHint: 'FoxsMusic reads embedded MP3 covers and looks for cover.jpg, folder.jpg and album.png in music folders. Other formats use folder artwork.', speed: 'SPEED', volume: 'VOLUME', back10: '−10 sec', forward10: '+10 sec',
     customBackground: 'Custom background image', chooseBackground: 'Choose image', removeBackground: 'Remove image', resetProfile: 'Reset profile and appearance', swipeHint: 'Swipe left or right to change screens',
     back: 'Back', emptyPlaylist: 'This playlist has no tracks yet',
   },
@@ -134,7 +140,7 @@ const COPY = {
     alreadyAdded: 'Dieser Titel ist bereits in der Playlist.', saved: 'Gespeichert',
     language: 'Oberflächensprache', storage: 'Musikspeicher', storageHint: 'Audiodateien werden in den privaten App-Ordner kopiert. Es wird kein vollständiger Speicherzugriff angefordert.',
     background: 'Hintergrundwiedergabe', backgroundOn: 'Über die System-Medienbenachrichtigung und den Sperrbildschirm verfügbar.',
-    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.2.0 · Android',
+    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.3.1 · Android',
     importDone: 'Import abgeschlossen', imported: 'Dateien hinzugefügt', skipped: 'Nicht unterstützte oder doppelte Dateien übersprungen',
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
@@ -142,36 +148,42 @@ const COPY = {
     smartRecent: 'KÜRZLICH HINZUGEFÜGT', smartFrequent: 'AM HÄUFIGSTEN', playedTimes: 'Wiedergaben', noPlayed: 'Noch keine Wiedergabestatistik', sourceDate: 'Dateidatum',
     profile: 'PROFIL', profileName: 'Profilname', profileAvatar: 'Profilbild', chooseAvatar: 'Profilbild auswählen', removeAvatar: 'Profilbild entfernen',
     appearance: 'DESIGN', accentColor: 'Akzentfarbe', backgroundColor: 'Hintergrundfarbe', panelStyle: 'Kartenstil', styleClassic: 'Klassisch', styleSoft: 'Sanft', styleGlass: 'Glas', customColor: 'Eigene HEX-Farbe', applyColor: 'Anwenden',
-    season: 'Saisonaler Hintergrund', noSeason: 'Aus', halloween: 'Halloween', christmas: 'Weihnachten', birthday: 'Geburtstag',
+    season: 'Saisonaler Hintergrund', noSeason: 'Aus', halloween: 'Halloween', christmas: 'Weihnachten', birthday: 'Geburtstag', seasonPaletteHint: 'Die Saison ändert Akzentfarbe, Kartenfarben und Hintergrundeffekte. Deine eigene Akzentfarbe erscheint wieder, wenn die Saison ausgeschaltet wird.', artworkSettingsLabel: 'Musik-Cover', artworkHint: 'FoxsMusic liest eingebettete MP3-Cover und sucht cover.jpg, folder.jpg und album.png in Musikordnern. Andere Formate verwenden das Ordner-Cover.', speed: 'GESCHWINDIGKEIT', volume: 'LAUTSTÄRKE', back10: '−10 Sek.', forward10: '+10 Sek.',
     customBackground: 'Eigenes Hintergrundbild', chooseBackground: 'Bild auswählen', removeBackground: 'Bild entfernen', resetProfile: 'Profil und Design zurücksetzen', swipeHint: 'Wische nach links oder rechts, um den Bildschirm zu wechseln',
     back: 'Zurück', emptyPlaylist: 'Diese Playlist enthält noch keine Titel',
   },
 };
 
 function Artwork({ size = 54, title = 'F', imageUri = null }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => { setImageFailed(false); }, [imageUri]);
+  const hasArtwork = Boolean(imageUri) && !imageFailed;
   return (
     <View style={[styles.artwork, { width: size, height: size, borderRadius: Math.max(12, size * 0.2) }]}>
-      {imageUri ? <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : <>
-        <View style={styles.artworkGlow} />
-        <Text style={[styles.artworkGlyph, { fontSize: size * 0.47 }]}>{title ? title.slice(0, 1).toUpperCase() : '♫'}</Text>
-        <Text style={styles.artworkWord}>FOX</Text>
-      </>}
+      {hasArtwork ? (
+        <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" onError={() => setImageFailed(true)} />
+      ) : (
+        <>
+          <View style={styles.artworkGlow} />
+          <Image source={require('./assets/foxsmusic-logo.png')} style={{ width: '84%', height: '84%' }} resizeMode="contain" />
+        </>
+      )}
     </View>
   );
 }
 
-function SeasonalEffects({ season }) {
+function SeasonalEffects({ season, theme }) {
   const symbols = SEASONS[season] || [];
   const valuesRef = useRef(null);
-  if (!valuesRef.current) valuesRef.current = Array.from({ length: 10 }, () => new Animated.Value(0));
+  if (!valuesRef.current) valuesRef.current = Array.from({ length: 18 }, () => new Animated.Value(0));
   const values = valuesRef.current;
   useEffect(() => {
     const loops = values.map((value, index) => {
       value.setValue(0);
       if (!symbols.length) return null;
       const loop = Animated.loop(Animated.sequence([
-        Animated.delay(index * 430),
-        Animated.timing(value, { toValue: 1, duration: 6800 + index * 360, useNativeDriver: true }),
+        Animated.delay(index * 260),
+        Animated.timing(value, { toValue: 1, duration: 8200 + (index % 6) * 780, useNativeDriver: true }),
         Animated.timing(value, { toValue: 0, duration: 1, useNativeDriver: true }),
       ]));
       loop.start();
@@ -183,10 +195,11 @@ function SeasonalEffects({ season }) {
   return (
     <View pointerEvents="none" style={styles.seasonLayer}>
       {values.map((value, index) => {
-        const translateY = value.interpolate({ inputRange: [0, 1], outputRange: [-45, 900] });
-        const opacity = value.interpolate({ inputRange: [0, 0.12, 0.85, 1], outputRange: [0, 0.58, 0.46, 0] });
+        const translateY = value.interpolate({ inputRange: [0, 1], outputRange: [-50, 1100] });
+        const translateX = value.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, (index % 2 ? 1 : -1) * (12 + index * 1.8), (index % 2 ? -1 : 1) * 8] });
+        const opacity = value.interpolate({ inputRange: [0, 0.12, 0.82, 1], outputRange: [0, 0.72, 0.58, 0] });
         const symbol = symbols[index % symbols.length];
-        return <Animated.Text key={`${season}-${index}`} style={[styles.seasonParticle, { left: `${6 + ((index * 37) % 89)}%`, opacity, transform: [{ translateY }, { rotate: `${(index % 2 ? 1 : -1) * (index * 11 + 8)}deg` }] }]}>{symbol}</Animated.Text>;
+        return <Animated.Text key={`${season}-${index}`} style={[styles.seasonParticle, { left: `${4 + ((index * 29) % 93)}%`, color: theme?.accent || '#F7D7E1', opacity, transform: [{ translateX }, { translateY }, { rotate: `${(index % 2 ? 1 : -1) * (index * 13 + 8)}deg` }] }]}>{symbol}</Animated.Text>;
       })}
     </View>
   );
@@ -251,6 +264,69 @@ function getSafFolderName(uri) {
   return pathPart.includes(':') ? (pathPart.split(':').pop() || 'Music') : pathPart;
 }
 
+async function extractMp3Metadata(fileUri, trackId) {
+  let handle = null;
+  try {
+    const source = new File(fileUri);
+    handle = source.open(FileMode.ReadOnly);
+    const header = await handle.readBytes(10);
+    if (header.length < 10 || header[0] !== 0x49 || header[1] !== 0x44 || header[2] !== 0x33) return {};
+    const syncSafeSize = (header[6] << 21) | (header[7] << 14) | (header[8] << 7) | header[9];
+    if (!syncSafeSize || syncSafeSize > 8 * 1024 * 1024) return {};
+    const body = await handle.readBytes(syncSafeSize);
+    if (body.length < syncSafeSize) return {};
+    const tagBytes = new Uint8Array(10 + body.length);
+    tagBytes.set(header, 0);
+    tagBytes.set(body, 10);
+    const metadata = parseId3v2Tag(tagBytes);
+    let artworkUri = null;
+    if (metadata.picture?.data?.length) {
+      const mime = String(metadata.picture.mimeType || '').toLowerCase();
+      const extension = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+      const coverFile = new File(Paths.document, `foxsmusic-cover-${trackId}.${extension}`);
+      if (coverFile.exists) coverFile.delete();
+      coverFile.create({ intermediates: true, overwrite: true });
+      const writer = coverFile.open(FileMode.WriteOnly);
+      try { await writer.writeBytes(metadata.picture.data); }
+      finally { writer.close(); }
+      if (coverFile.exists && coverFile.size > 0) artworkUri = coverFile.uri;
+    }
+    return {
+      title: metadata.title || '',
+      artist: metadata.artist || '',
+      album: metadata.album || '',
+      artworkUri,
+    };
+  } catch (error) {
+    console.warn('FoxsMusic: embedded MP3 tags could not be read', error);
+    return {};
+  } finally {
+    try { handle?.close(); } catch (_) {}
+  }
+}
+
+async function copyFolderArtwork(sourceUri, destinationUri) {
+  try {
+    const source = new File(sourceUri);
+    const destination = new File(destinationUri);
+    if (destination.exists) destination.delete();
+    await source.copy(destination);
+    if (destination.exists && destination.size > 0) return destination.uri;
+  } catch (error) {
+    console.warn('FoxsMusic: modern file copy for folder artwork failed; trying legacy copy', error);
+  }
+  try {
+    const previous = await LegacyFileSystem.getInfoAsync(destinationUri);
+    if (previous.exists) await LegacyFileSystem.deleteAsync(destinationUri, { idempotent: true });
+    await LegacyFileSystem.copyAsync({ from: sourceUri, to: destinationUri });
+    const copied = await LegacyFileSystem.getInfoAsync(destinationUri);
+    return copied.exists ? destinationUri : null;
+  } catch (error) {
+    console.warn('FoxsMusic: could not copy folder artwork', error);
+    return null;
+  }
+}
+
 function AppContent() {
   const playlist = useAudioPlaylist({ sources: [], loop: 'none', updateInterval: 500 });
   const playback = useAudioPlaylistStatus(playlist);
@@ -268,13 +344,14 @@ function AppContent() {
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [colorInput, setColorInput] = useState(DEFAULT_PROFILE.accentColor);
   const [profileNameInput, setProfileNameInput] = useState(DEFAULT_PROFILE.name);
-  const swipeTouchStart = useRef(null);
   const screenAnim = useRef(new Animated.Value(1)).current;
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueIds, setQueueIds] = useState([]);
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const [repeatMode, setRepeatMode] = useState('none');
   const [shuffle, setShuffle] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [volumePercent, setVolumePercent] = useState(100);
   const [importing, setImporting] = useState(false);
   const [musicFolderUri, setMusicFolderUri] = useState(null);
   const [folderSyncing, setFolderSyncing] = useState(false);
@@ -293,6 +370,9 @@ function AppContent() {
   const seekOriginX = useRef(0);
   const seekDuration = useRef(0);
   const seekPlaylist = useRef(playlist);
+  const volumeWidth = useRef(1);
+  const volumeOriginX = useRef(0);
+  const volumeTrackRef = useRef(null);
   seekDuration.current = playback.duration;
   seekPlaylist.current = playlist;
 
@@ -311,14 +391,36 @@ function AppContent() {
     onPanResponderRelease: event => seekToPageX(event.nativeEvent.pageX),
     onPanResponderTerminationRequest: () => false,
   }), []);
+
+  const volumeToPageX = pageX => {
+    if (!Number.isFinite(pageX)) return;
+    const ratio = Math.max(0, Math.min(1, (pageX - volumeOriginX.current) / Math.max(1, volumeWidth.current)));
+    setVolumePercent(Math.round(ratio * 100));
+  };
+  const volumeResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > Math.abs(gesture.dy),
+    onPanResponderGrant: event => volumeToPageX(event.nativeEvent.pageX),
+    onPanResponderMove: event => volumeToPageX(event.nativeEvent.pageX),
+    onPanResponderRelease: event => volumeToPageX(event.nativeEvent.pageX),
+    onPanResponderTerminationRequest: () => false,
+  }), []);
   const t = COPY[language] || COPY.ru;
 
   const currentTrack = tracks.find(track => track.id === currentTrackId) || null;
   const queueTracks = queueIds.map(id => tracks.find(track => track.id === id)).filter(Boolean);
   const queueCurrentIndex = currentTrackId ? queueIds.indexOf(currentTrackId) : -1;
   const playlistDetail = playlists.find(item => item.id === selectedPlaylistId) || null;
-  const accentColor = profile.accentColor || C.red;
-  const panelBackground = profile.panelStyle === 'glass' ? 'rgba(25, 13, 20, 0.82)' : profile.panelStyle === 'soft' ? '#21151D' : '#141015';
+  const seasonTheme = SEASON_THEMES[profile.season] || null;
+  const accentColor = seasonTheme?.accent || profile.accentColor || C.red;
+  const panelBackground = profile.panelStyle === 'glass'
+    ? (seasonTheme ? `${seasonTheme.panel}E6` : 'rgba(25, 13, 20, 0.82)')
+    : profile.panelStyle === 'soft'
+      ? (seasonTheme?.panelSoft || '#21151D')
+      : (seasonTheme?.panel || '#141015');
+  const appBackgroundColor = seasonTheme && profile.backgroundColor === DEFAULT_PROFILE.backgroundColor
+    ? seasonTheme.background
+    : (profile.backgroundColor || C.background);
   const recentSmartTracks = useMemo(() => sortTracks(tracks, 'recent').slice(0, 50), [tracks]);
   const frequentSmartTracks = useMemo(() => sortMostPlayed(tracks.filter(track => (Number(playStats[track.id]?.count) || 0) > 0), playStats).slice(0, 50), [tracks, playStats]);
   const smartTracks = selectedSmartPlaylist === 'recent' ? recentSmartTracks : selectedSmartPlaylist === 'frequent' ? frequentSmartTracks : [];
@@ -354,6 +456,8 @@ function AppContent() {
               })));
               setLanguage(['ru', 'en', 'de'].includes(saved.language) ? saved.language : 'ru');
               if (saved.playStats && typeof saved.playStats === 'object') setPlayStats(saved.playStats);
+              if (Number.isFinite(Number(saved.playbackRate)) && Number(saved.playbackRate) >= 0.5 && Number(saved.playbackRate) <= 2) setPlaybackRate(Number(saved.playbackRate));
+              if (Number.isFinite(Number(saved.volumePercent))) setVolumePercent(Math.max(0, Math.min(100, Math.round(Number(saved.volumePercent)))));
               if (saved.profile && typeof saved.profile === 'object') {
                 const safeProfile = { ...DEFAULT_PROFILE, ...saved.profile };
                 if (!isValidHexColor(safeProfile.accentColor)) safeProfile.accentColor = DEFAULT_PROFILE.accentColor;
@@ -408,11 +512,36 @@ function AppContent() {
 
   useEffect(() => {
     if (!ready) return;
-    const payload = { version: 1, tracks, playlists, language, repeatMode, playStats, profile };
+    let cancelled = false;
+    (async () => {
+      const candidates = tracks.filter(track => String(track.fileName || track.uri || '').toLowerCase().endsWith('.mp3') && !track.embeddedMetadataChecked).slice(0, METADATA_REPAIR_BATCH);
+      if (!candidates.length) return;
+      const updates = new Map();
+      for (const track of candidates) {
+        if (cancelled) break;
+        const metadata = await extractMp3Metadata(track.uri, track.id);
+        updates.set(track.id, {
+          title: metadata.title || track.title,
+          artist: metadata.artist || track.artist,
+          album: metadata.album || track.album,
+          artworkUri: track.artworkUri || metadata.artworkUri || null,
+          embeddedMetadataChecked: true,
+        });
+      }
+      if (!cancelled && updates.size) {
+        setTracks(current => current.map(item => updates.has(item.id) ? { ...item, ...updates.get(item.id) } : item));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [ready, tracks]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const payload = { version: 1, tracks, playlists, language, repeatMode, playStats, profile, playbackRate, volumePercent };
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload)).catch(error => {
       console.warn('FoxsMusic mobile: could not persist library', error);
     });
-  }, [ready, tracks, playlists, language, repeatMode, playStats, profile]);
+  }, [ready, tracks, playlists, language, repeatMode, playStats, profile, playbackRate, volumePercent]);
 
   useEffect(() => {
     screenAnim.setValue(0);
@@ -436,6 +565,16 @@ function AppContent() {
     if (!ready) return;
     playlist.loop = repeatMode;
   }, [playlist, repeatMode, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    try { playlist.playbackRate = playbackRate; } catch (error) { console.warn('FoxsMusic: playback rate could not be applied', error); }
+  }, [playlist, playbackRate, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    try { playlist.volume = Math.max(0, Math.min(1, volumePercent / 100)); } catch (error) { console.warn('FoxsMusic: volume could not be applied', error); }
+  }, [playlist, volumePercent, ready]);
 
   useEffect(() => {
     if (!ready) return;
@@ -492,6 +631,7 @@ function AppContent() {
         title: currentTrack.title,
         artist: currentTrack.artist || t.unknownArtist,
         albumTitle: currentTrack.album || 'FoxsMusic',
+        artworkUrl: currentTrack.artworkUri || undefined,
       });
     } catch (_) {}
   }, [currentTrack, language, playlist]);
@@ -528,6 +668,7 @@ function AppContent() {
         title: track.title,
         artist: track.artist || t.unknownArtist,
         albumTitle: track.album || 'FoxsMusic',
+        artworkUrl: track.artworkUri || undefined,
       }, {
         showNextTrack: true,
         showPreviousTrack: true,
@@ -653,18 +794,21 @@ async function importAudioFiles() {
         if (!copiedInfo.exists) throw new Error('Файл не сохранился в хранилище FoxsMusic.');
 
         const parsed = parseTrackName(asset.name);
+        const metadata = extension === 'mp3' ? await extractMp3Metadata(destination, id) : {};
         importedTracks.push({
           id,
-          title: parsed.title,
-          artist: parsed.artist,
-          album: '',
+          title: metadata.title || parsed.title,
+          artist: metadata.artist || parsed.artist,
+          album: metadata.album || '',
+          artworkUri: metadata.artworkUri || null,
+          embeddedMetadataChecked: extension === 'mp3',
           fileName: asset.name,
           size: Number(copiedInfo.size) || size,
           uri: destination,
           addedAt: Date.now() + importedTracks.length,
           favorite: false,
           duration: 0,
-          originalModifiedAt: (() => { const stamp = Number(asset.creationTime || asset.lastModified || asset.modificationTime || 0); return stamp > 0 ? (stamp < 1e12 ? stamp * 1000 : stamp) : Date.now(); })(),
+          originalModifiedAt: normalizeFileTimestamp(asset.creationTime || asset.lastModified || asset.modificationTime) || Date.now(),
         });
         known.add(duplicateKey);
 
@@ -716,19 +860,15 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
     return (hash >>> 0).toString(16);
   }
 
-  async function copyFolderArtwork(entries, folderKey) {
+  async function findAndCopyFolderArtwork(entries, folderKey) {
     const names = ['cover.jpg', 'cover.jpeg', 'cover.png', 'folder.jpg', 'folder.png', 'album.jpg', 'album.png', 'front.jpg', 'front.png'];
     for (const uri of entries) {
       const name = getSafEntryName(uri).toLowerCase();
       if (!names.includes(name)) continue;
       const extension = name.split('.').pop();
       const destination = `${LegacyFileSystem.documentDirectory}foxsmusic-art-${stableFolderKey(folderKey)}.${extension}`;
-      try {
-        const existing = await LegacyFileSystem.getInfoAsync(destination);
-        if (!existing.exists) await LegacyFileSystem.copyAsync({ from: uri, to: destination });
-        const copied = await LegacyFileSystem.getInfoAsync(destination);
-        if (copied.exists) return destination;
-      } catch (error) { console.warn('FoxsMusic: could not copy folder artwork', error); }
+      const copiedUri = await copyFolderArtwork(uri, destination);
+      if (copiedUri) return copiedUri;
     }
     return null;
   }
@@ -737,7 +877,7 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
     if (depth > MAX_FOLDER_DEPTH || visitedDirectories.has(directoryUri)) return;
     visitedDirectories.add(directoryUri);
     const entries = await saf.readDirectoryAsync(directoryUri);
-    const folderArtwork = await copyFolderArtwork(entries, directoryUri);
+    const folderArtwork = await findAndCopyFolderArtwork(entries, directoryUri);
 
     for (const entryUri of entries) {
       let info = null;
@@ -755,8 +895,20 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
       const duplicateKey = `${name.toLowerCase()}:${size}`;
       if (known.has(duplicateKey)) {
         const existing = existingByKey.get(duplicateKey);
-        if (existing && (!existing.sourceFolder || !existing.artworkUri || !existing.originalModifiedAt || !existing.album)) {
-          metadataUpdates.push({ id: existing.id, sourceFolder: relativeFolder || folderName, album: relativeFolder.split('/').pop() || folderName, artworkUri: folderArtwork || existing.artworkUri || null, originalModifiedAt: Number(info?.creationTime || info?.modificationTime) ? Number(info.creationTime || info.modificationTime) * 1000 : existing.originalModifiedAt || null });
+        if (existing && (!existing.sourceFolder || !existing.artworkUri || !existing.originalModifiedAt || !existing.album || (name.toLowerCase().endsWith('.mp3') && !existing.artist))) {
+          const embedded = name.toLowerCase().endsWith('.mp3') && (!existing.artworkUri || !existing.album || !existing.artist)
+            ? await extractMp3Metadata(existing.uri, existing.id)
+            : {};
+          metadataUpdates.push({
+            id: existing.id,
+            title: embedded.title || existing.title,
+            artist: embedded.artist || existing.artist,
+            sourceFolder: existing.sourceFolder || relativeFolder || folderName,
+            album: existing.album || embedded.album || relativeFolder.split('/').pop() || folderName,
+            artworkUri: existing.artworkUri || folderArtwork || embedded.artworkUri || null,
+            embeddedMetadataChecked: existing.embeddedMetadataChecked || name.toLowerCase().endsWith('.mp3'),
+            originalModifiedAt: existing.originalModifiedAt || normalizeFileTimestamp(info?.creationTime || info?.modificationTime) || null,
+          });
         }
         skipped++; continue;
       }
@@ -768,11 +920,14 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
         const copiedInfo = await LegacyFileSystem.getInfoAsync(destination, { size: true });
         if (!copiedInfo.exists) throw new Error('Файл не сохранился в хранилище FoxsMusic.');
         const parsed = parseTrackName(name);
+        const embedded = extension === 'mp3' ? await extractMp3Metadata(destination, id) : {};
         importedTracks.push({
-          id, title: parsed.title, artist: parsed.artist, album: relativeFolder.split('/').pop() || folderName,
+          id, title: embedded.title || parsed.title, artist: embedded.artist || parsed.artist, album: embedded.album || relativeFolder.split('/').pop() || folderName,
           fileName: name, size: Number(copiedInfo.size) || size, uri: destination,
-          addedAt: Date.now() + importedTracks.length, originalModifiedAt: Number(info?.creationTime || info?.modificationTime) ? Number(info.creationTime || info.modificationTime) * 1000 : Date.now(),
-          favorite: false, duration: 0, sourceFolder: relativeFolder || folderName, artworkUri: folderArtwork || null,
+          artworkUri: folderArtwork || embedded.artworkUri || null,
+          embeddedMetadataChecked: extension === 'mp3',
+          addedAt: Date.now() + importedTracks.length, originalModifiedAt: normalizeFileTimestamp(info?.creationTime || info?.modificationTime) || Date.now(),
+          favorite: false, duration: 0, sourceFolder: relativeFolder || folderName,
         });
         known.add(duplicateKey);
       } catch (copyError) { skipped++; console.warn(`FoxsMusic mobile: failed to import ${name} from Music folder`, copyError); }
@@ -980,12 +1135,26 @@ async function importMusicFolder() {
     setColorInput(normalized.toUpperCase());
   }
 
-  function navigateSwipe(dx, dy, startY) {
-    if (Math.abs(dx) < 85 || Math.abs(dy) > 70 || Number(startY) > 210 || playlistModalVisible) return;
+  function navigateSwipe(dx) {
+    if (Math.abs(dx) < 76 || playlistModalVisible) return;
     const tabs = ['library', 'playlists', 'player', 'settings'];
     const index = tabs.indexOf(screen);
     const nextIndex = Math.max(0, Math.min(tabs.length - 1, index + (dx < 0 ? 1 : -1)));
     if (nextIndex !== index) setScreen(tabs[nextIndex]);
+  }
+
+  const screenSwipeResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_, gesture) => !playlistModalVisible
+      && Math.abs(gesture.dx) > 76
+      && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.6,
+    onPanResponderRelease: (_, gesture) => navigateSwipe(gesture.dx),
+    onPanResponderTerminationRequest: () => true,
+  }), [playlistModalVisible, screen]);
+
+  function seekBy(seconds) {
+    if (!playback.duration) return;
+    playlist.seekTo(Math.max(0, Math.min(playback.duration, playback.currentTime + seconds)));
   }
 
   function renderLibraryHeader() {
@@ -1105,13 +1274,14 @@ async function importMusicFolder() {
   const playStateLabel = playback.playing ? 'Ⅱ' : '▶';
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: profile.backgroundColor || C.background }]} edges={['top', 'bottom']}>
-      <StatusBar barStyle="light-content" backgroundColor={profile.backgroundColor || C.background} />
-      <ImageBackground source={profile.backgroundImageUri ? { uri: profile.backgroundImageUri } : undefined} imageStyle={{ opacity: profile.backgroundImageUri ? 0.55 : 0 }} style={[styles.appRoot, { backgroundColor: profile.backgroundColor || C.background }]} resizeMode="cover">
-        <View pointerEvents="none" style={[styles.backgroundShade, { backgroundColor: profile.backgroundImageUri ? 'rgba(5,4,8,0.48)' : 'transparent' }]} />
-        <SeasonalEffects season={profile.season} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: appBackgroundColor }]} edges={['top', 'bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor={appBackgroundColor} />
+      <ImageBackground source={profile.backgroundImageUri ? { uri: profile.backgroundImageUri } : undefined} imageStyle={{ opacity: profile.backgroundImageUri ? 0.62 : 0 }} style={[styles.appRoot, { backgroundColor: appBackgroundColor }]} resizeMode="cover">
+        <View pointerEvents="none" style={[styles.backgroundShade, { backgroundColor: profile.backgroundImageUri ? 'rgba(5,4,8,0.38)' : 'transparent' }]} />
+        {seasonTheme && <View pointerEvents="none" style={[styles.seasonAtmosphere, { backgroundColor: seasonTheme.atmosphere }]} />}
+        <SeasonalEffects season={profile.season} theme={seasonTheme} />
         <View style={styles.foreground}>
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { borderBottomColor: `${accentColor}44` }]}>
           <View style={styles.brandMark}><Image source={require('./assets/desktop-logo.png')} style={styles.brandMarkImage} resizeMode="contain" /></View>
           <View style={styles.brandCopy}>
             <Text style={styles.brandName}>Foxs<Text style={styles.brandNameBold}>Music</Text></Text>
@@ -1121,7 +1291,7 @@ async function importMusicFolder() {
           <Pressable onPress={() => setScreen('settings')} style={[styles.topAction, { borderColor: `${accentColor}66` }]}><Text style={[styles.topActionGlyph, { color: accentColor }]}>⚙</Text></Pressable>
         </View>
 
-        <Animated.View style={[styles.content, { opacity: screenAnim, transform: [{ translateX: screenAnim.interpolate({ inputRange: [0, 1], outputRange: [screen === 'library' ? -12 : 12, 0] }) }] }]} onTouchStart={event => { swipeTouchStart.current = { x: event.nativeEvent.pageX, y: event.nativeEvent.pageY, localY: event.nativeEvent.pageY }; }} onTouchEnd={event => { if (swipeTouchStart.current) navigateSwipe(event.nativeEvent.pageX - swipeTouchStart.current.x, event.nativeEvent.pageY - swipeTouchStart.current.y, swipeTouchStart.current.localY); swipeTouchStart.current = null; }}>
+        <Animated.View {...screenSwipeResponder.panHandlers} style={[styles.content, { opacity: screenAnim, transform: [{ translateX: screenAnim.interpolate({ inputRange: [0, 1], outputRange: [screen === 'library' ? -12 : 12, 0] }) }] }]}>
           {screen === 'library' && (
             <FlatList
               data={visibleTracks}
@@ -1194,6 +1364,10 @@ async function importMusicFolder() {
                     </View>
                     <View style={styles.seekLabels}><Text style={styles.seekTime}>{formatTime(playback.currentTime)}</Text><Text style={styles.seekTime}>{formatTime(playback.duration)}</Text></View>
                   </View>
+                  <View style={styles.quickSeekRow}>
+                    <Pressable onPress={() => seekBy(-10)} style={[styles.quickSeekButton, { borderColor: `${accentColor}66` }]}><Text style={[styles.quickSeekText, { color: accentColor }]}>↶ {t.back10}</Text></Pressable>
+                    <Pressable onPress={() => seekBy(10)} style={[styles.quickSeekButton, { borderColor: `${accentColor}66` }]}><Text style={[styles.quickSeekText, { color: accentColor }]}>{t.forward10} ↷</Text></Pressable>
+                  </View>
                   <View style={styles.transportRow}>
                     <ActionButton label="⤨" active={shuffle} onPress={() => setShuffle(value => !value)} accessibilityLabel={t.shuffle} accentColor={accentColor} />
                     <ActionButton label="⏮" onPress={previousTrack} accessibilityLabel={t.previous} accentColor={accentColor} />
@@ -1204,6 +1378,24 @@ async function importMusicFolder() {
                     <ActionButton label={repeatMode === 'single' ? '↻¹' : '↻'} active={repeatMode !== 'none'} onPress={cycleRepeat} accessibilityLabel={repeatMode === 'none' ? t.repeatOff : repeatMode === 'all' ? t.repeatAll : t.repeatOne} accentColor={accentColor} />
                   </View>
                   <Text style={styles.repeatHint}>{repeatMode === 'none' ? t.repeatOff : repeatMode === 'all' ? t.repeatAll : t.repeatOne}</Text>
+                  <View style={[styles.playerExtraCard, { backgroundColor: panelBackground, borderColor: `${accentColor}55` }]}>
+                    <Text style={styles.playerExtraLabel}>{t.speed}</Text>
+                    <View style={styles.speedOptions}>
+                      {[0.75, 1, 1.25, 1.5, 2].map(rate => (
+                        <Pressable key={rate} onPress={() => setPlaybackRate(rate)} style={[styles.speedOption, playbackRate === rate && { backgroundColor: `${accentColor}28`, borderColor: accentColor }]}>
+                          <Text style={[styles.speedOptionText, playbackRate === rate && { color: accentColor }]}>{rate}×</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <View style={styles.volumeHeader}><Text style={styles.playerExtraLabel}>{t.volume}</Text><Text style={[styles.volumeValue, { color: accentColor }]}>{volumePercent}%</Text></View>
+                    <View style={styles.volumeControl}>
+                      <Pressable accessibilityRole="button" accessibilityLabel="Volume down" onPress={() => setVolumePercent(value => Math.max(0, value - 5))} style={[styles.volumeStep, { borderColor: `${accentColor}66` }]}><Text style={[styles.volumeStepText, { color: accentColor }]}>−</Text></Pressable>
+                      <View ref={volumeTrackRef} {...volumeResponder.panHandlers} onLayout={() => volumeTrackRef.current?.measureInWindow((x, _y, width) => { volumeOriginX.current = x; volumeWidth.current = Math.max(1, width); })} style={styles.volumeTrackTouch} accessible accessibilityRole="adjustable" accessibilityLabel={t.volume} accessibilityValue={{ min: 0, max: 100, now: volumePercent }} onAccessibilityAction={event => setVolumePercent(value => Math.max(0, Math.min(100, value + (event.nativeEvent.actionName === 'increment' ? 5 : -5))))} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}>
+                        <View style={styles.volumeTrack}><View style={[styles.volumeProgress, { width: `${volumePercent}%`, backgroundColor: accentColor }]} /></View>
+                      </View>
+                      <Pressable accessibilityRole="button" accessibilityLabel="Volume up" onPress={() => setVolumePercent(value => Math.min(100, value + 5))} style={[styles.volumeStep, { borderColor: `${accentColor}66` }]}><Text style={[styles.volumeStepText, { color: accentColor }]}>＋</Text></Pressable>
+                    </View>
+                  </View>
                   <View style={styles.queueHeader}><Text style={styles.eyebrow}>{t.queue}</Text><Text style={styles.queueCount}>{queueTracks.length}</Text></View>
                   {queueTracks.slice(Math.max(0, playback.currentIndex), Math.max(0, playback.currentIndex) + 5).map((track, index) => (
                     <TrackRow key={track.id} track={track} index={index} active={currentTrackId === track.id} language={language} playCount={Number(playStats[track.id]?.count) || 0} accentColor={accentColor} panelBackground={panelBackground} onPlay={() => playTrack(track, queueIds)} onFavorite={() => toggleFavorite(track.id)} onAdd={() => openAddToPlaylist(track.id)} />
@@ -1316,7 +1508,7 @@ async function importMusicFolder() {
                 <Text style={styles.settingsLabel}>{t.appearance}</Text>
                 <Text style={styles.settingsSubLabel}>{t.accentColor}</Text>
                 <View style={styles.colorSwatches}>
-                  {ACCENT_PRESETS.map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={color} onPress={() => { setProfile(current => ({ ...current, accentColor: color })); setColorInput(color); }} style={[styles.colorSwatch, { backgroundColor: color }, profile.accentColor === color && styles.colorSwatchActive]} />)}
+                  {ACCENT_PRESETS.map(color => <Pressable key={color} accessibilityRole="button" accessibilityLabel={color} onPress={() => { setProfile(current => ({ ...current, accentColor: color })); setColorInput(color); }} style={[styles.colorSwatch, { backgroundColor: color }, !seasonTheme && profile.accentColor === color && styles.colorSwatchActive]} />)}
                 </View>
                 <Text style={styles.settingsSubLabel}>{t.customColor}</Text>
                 <View style={styles.customColorRow}>
@@ -1340,11 +1532,12 @@ async function importMusicFolder() {
                 <Text style={styles.settingsLabel}>{t.season}</Text>
                 <View style={styles.seasonGrid}>
                   {[['none', t.noSeason, '◌'], ['halloween', t.halloween, '🎃'], ['christmas', t.christmas, '❄'], ['birthday', t.birthday, '🎂']].map(([id, label, glyph]) => (
-                    <Pressable key={id} onPress={() => setProfile(current => ({ ...current, season: id }))} style={[styles.seasonChoice, profile.season === id && [styles.seasonChoiceActive, { borderColor: accentColor }]]}>
+                    <Pressable key={id} onPress={() => setProfile(current => ({ ...current, season: id }))} style={[styles.seasonChoice, { backgroundColor: profile.season === id ? `${accentColor}20` : panelBackground }, profile.season === id && [styles.seasonChoiceActive, { borderColor: accentColor, backgroundColor: `${accentColor}28`, borderWidth: 2 }]]}>
                       <Text style={styles.seasonGlyph}>{glyph}</Text><Text style={styles.seasonLabel}>{label}</Text>
                     </Pressable>
                   ))}
                 </View>
+                <Text style={styles.settingsDescription}>{t.seasonPaletteHint}</Text>
                 <Text style={styles.settingsDescription}>{t.swipeHint}</Text>
               </View>
 
@@ -1358,6 +1551,10 @@ async function importMusicFolder() {
                 {profile.backgroundImageUri && <Image source={{ uri: profile.backgroundImageUri }} style={styles.backgroundPreview} resizeMode="cover" />}
               </View>
 
+              <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
+                <Text style={styles.settingsLabel}>{t.artworkSettingsLabel}</Text>
+                <Text style={styles.settingsDescription}>{t.artworkHint}</Text>
+              </View>
               <View style={[styles.settingsCard, { backgroundColor: panelBackground }]}>
                 <Text style={styles.settingsLabel}>{t.storage}</Text>
                 <Text style={styles.settingsDescription}>{t.storageHint}</Text>
@@ -1381,7 +1578,7 @@ async function importMusicFolder() {
         </Animated.View>
 
         {currentTrack && screen !== 'player' && (
-          <Pressable onPress={() => setScreen('player')} style={[styles.miniPlayer, { backgroundColor: `${accentColor}18`, borderTopColor: `${accentColor}66` }]}>
+          <Pressable onPress={() => setScreen('player')} style={[styles.miniPlayer, { backgroundColor: panelBackground, borderTopColor: `${accentColor}66` }]}>
             <Artwork size={48} title={currentTrack.title} imageUri={currentTrack.artworkUri} />
             <View style={styles.miniPlayerCopy}>
               <Text numberOfLines={1} style={styles.miniPlayerTitle}>{currentTrack.title}</Text>
@@ -1392,7 +1589,7 @@ async function importMusicFolder() {
           </Pressable>
         )}
 
-        <View style={[styles.bottomNav, { backgroundColor: profile.panelStyle === 'glass' ? 'rgba(12,9,13,0.78)' : profile.backgroundColor || '#0C090D', borderTopColor: `${accentColor}44` }]}>
+        <View style={[styles.bottomNav, { backgroundColor: profile.panelStyle === 'glass' ? 'rgba(12,9,13,0.78)' : panelBackground, borderTopColor: `${accentColor}55` }]}>
           {[
             ['library', '♫', t.library],
             ['playlists', '≡', t.playlists],
@@ -1482,8 +1679,9 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   foreground: { flex: 1 },
   backgroundShade: { ...StyleSheet.absoluteFillObject },
+  seasonAtmosphere: { ...StyleSheet.absoluteFillObject, zIndex: 0 },
   seasonLayer: { ...StyleSheet.absoluteFillObject, zIndex: 0, overflow: 'hidden' },
-  seasonParticle: { position: 'absolute', top: 0, fontSize: 19, color: '#F7D7E1' },
+  seasonParticle: { position: 'absolute', top: 0, fontSize: 20, color: '#F7D7E1', textShadowColor: 'rgba(255,255,255,0.24)', textShadowRadius: 8 },
   libraryListContent: { paddingHorizontal: 18, paddingBottom: 24 },
   simpleScreen: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 28 },
   compactHero: { minHeight: 108, marginTop: 12, marginBottom: 4, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: '#702039', backgroundColor: '#10070B', flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingVertical: 10, position: 'relative' },
@@ -1576,6 +1774,22 @@ const styles = StyleSheet.create({
   seekProgress: { height: 14, borderRadius: 10, backgroundColor: C.red },
   seekKnob: { position: 'absolute', marginLeft: -13, width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFF0F4', borderWidth: 3, borderColor: C.red, elevation: 3 },
   seekLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
+  quickSeekRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: -3, marginBottom: 12 },
+  quickSeekButton: { flex: 1, minHeight: 44, borderRadius: 12, borderWidth: 1, backgroundColor: '#100B11', alignItems: 'center', justifyContent: 'center' },
+  quickSeekText: { fontSize: 11, fontWeight: '800' },
+  playerExtraCard: { borderRadius: 16, borderWidth: 1, padding: 13, marginTop: 6, marginBottom: 18 },
+  playerExtraLabel: { color: C.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
+  speedOptions: { flexDirection: 'row', gap: 6, marginTop: 10 },
+  speedOption: { flex: 1, minHeight: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#100C12', borderWidth: 1, borderColor: C.line },
+  speedOptionText: { color: C.muted, fontSize: 11, fontWeight: '900' },
+  volumeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
+  volumeValue: { fontSize: 11, fontWeight: '900' },
+  volumeControl: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  volumeStep: { width: 42, height: 42, borderRadius: 11, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#100C12' },
+  volumeStepText: { fontSize: 21, fontWeight: '900' },
+  volumeTrackTouch: { flex: 1, height: 44, justifyContent: 'center', paddingVertical: 8 },
+  volumeTrack: { height: 9, borderRadius: 9, overflow: 'hidden', backgroundColor: '#38242D' },
+  volumeProgress: { height: '100%', borderRadius: 9 },
   seekTime: { color: C.subtle, fontSize: 11, fontVariant: ['tabular-nums'] },
   transportRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   mainPlayButton: { width: 68, height: 68, borderRadius: 24, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', shadowColor: C.red, shadowRadius: 16, shadowOpacity: 0.3, elevation: 8 },

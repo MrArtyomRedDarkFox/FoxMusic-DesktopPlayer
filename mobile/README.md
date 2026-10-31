@@ -1,8 +1,8 @@
-# FoxsMusic Mobile — Android 0.2.0
+# FoxsMusic Mobile — Android 0.3.1
 
 Отдельное нативное приложение FoxsMusic для Android. Desktop-проект на Electron не изменяется: мобильная версия находится в отдельной папке `mobile/`.
 
-## Что уже входит в первую версию
+## Возможности мобильной версии 0.3.1
 
 - Импорт нескольких аудиофайлов через системный Android picker (Storage Access Framework).
 - Поддерживаемые расширения: MP3, M4A, AAC, WAV, FLAC, OGG/OGA и OPUS.
@@ -11,15 +11,19 @@
 - Сортировка по дате добавления, названию и исполнителю.
 - Фильтрация библиотеки по подключённым папкам и отдельно импортированным файлам.
 - Повторное сканирование подключённой папки Music одной кнопкой без повторного выбора разрешения.
-- Воспроизведение, пауза, предыдущий/следующий трек, переход по шкале времени.
+- Воспроизведение, пауза, предыдущий/следующий трек, увеличенная шкала перемотки, быстрые переходы ±10 секунд.
+- Скорость 0.75× / 1× / 1.25× / 1.5× / 2× и регулировка громкости ползунком/кнопками.
 - Повтор трека/очереди и случайный выбор следующего трека кнопкой Next.
-- Сохранение метаданных библиотеки между запусками приложения.
+- Сохранение метаданных библиотеки, плейлистов, профиля и статистики прослушиваний между запусками.
+- Встроенные MP3-обложки APIC и ID3-метаданные (v2.2/v2.3/v2.4), резервные обложки из `cover.jpg`, `folder.jpg`, `album.png` и похожих файлов альбома.
+- Профиль с аватаром, HEX-цветом, фоном, стилем карточек и сезонными палитрами Halloween / New Year / Birthday.
+- Горизонтальные свайпы для переключения вкладок; вертикальная прокрутка остаётся стандартной.
 - Русский, английский и немецкий интерфейс.
 - Настроен Expo Audio Android media playback service: фоновое воспроизведение, системное медиа-уведомление и элементы управления на экране блокировки.
 
-## Что пока не входит
+## Текущие ограничения
 
-Это первый Android MVP, а не полная копия Desktop. Пока нет DSP-эквалайзера/Audio Studio, извлечения встроенных обложек и тегов из всех форматов, двусторонней синхронизации с Desktop и переноса самих аудиофайлов через Desktop JSON backup. Эти функции стоит добавлять отдельными этапами после проверки базового Android-плеера на реальном телефоне.
+Это нативный Android-плеер, а не полная копия Desktop. Сейчас читаются встроенные ID3v2.2/v2.3/v2.4-теги и APIC/PIC-обложки MP3; также ищутся внешние cover/folder/album/front JPG/PNG в папках альбомов. Встроенные картинки FLAC/M4A/AAC/OGG/OPUS пока не извлекаются. Полноценный DSP-эквалайзер/Audio Studio и двусторонняя синхронизация с Desktop пока не входят в мобильную сборку.
 
 ## Требования
 
@@ -87,13 +91,26 @@ On the Library screen, choose **Connect Music folder** and select the device's `
 Audio files selected through the file picker are copied sequentially into FoxsMusic's private Documents storage. This avoids retaining short-lived picker-cache URIs as library entries.
 
 
+## FoxsMusic Mobile 0.3.1
+
+- Исправлено отображение обложек: при импорте MP3 считываются ID3v2.3/2.4 title, artist, album и APIC artwork; изображения сохраняются в приватной папке FoxsMusic.
+- При следующем запуске старые MP3-записи без обложки/тегов автоматически обогащаются из исходных файлов, не очищая библиотеку.
+- Подключённые папки используют копирование изображений через новый Expo File API с резервным legacy-путём.
+- Сезонные режимы теперь меняют акцент, оттенок карточек, атмосферу фона и набор анимированных частиц: Halloween, New Year и Birthday.
+- В плеере добавлены скорость 0.75× / 1× / 1.25× / 1.5× / 2×, регулировка громкости ползунком и кнопками ±5%, быстрый переход на 10 секунд назад/вперёд.
+- Горизонтальный свайп между вкладками распознаётся отдельно от вертикальной прокрутки списка и настроек.
+- Обложка текущего трека передаётся в системный медиаплеер Android, когда она доступна.
+- Версия повышена до 0.3.1, Android versionCode — 7. AsyncStorage key и формат библиотеки version 1 сохранены.
+
+### Ограничение по обложкам
+
+Встроенные обложки поддерживаются сейчас для MP3 (ID3v2.3/2.4 APIC). Для FLAC/M4A и других форматов продолжают использоваться изображения `cover.jpg`, `folder.jpg`, `album.png` и аналогичные файлы рядом с музыкой.
+
 ## FoxsMusic Mobile 0.3.0
 
-- Larger touch targets across the mobile UI and a 68 px playback seek area with a 26 px thumb.
-- Swipe navigation between Library, Playlists, Player and Settings, with a short fade/slide transition.
-- Smart playlists: Recently added and Most played. Play counts and last-played timestamps are stored separately from the track queue to avoid rebuilding playback when stats change.
-- Track rows show the source file date (creation timestamp where the platform provides it, otherwise the modification timestamp). For connected folders, FoxsMusic can use `cover.jpg`, `cover.jpeg`, `cover.png`, `folder.jpg`, `folder.png`, `album.jpg`, `album.png`, `front.jpg` or `front.png` in each album folder as the artwork. This is a folder-cover fallback; the current Expo MVP does not yet read embedded ID3/FLAC artwork or tags from every codec.
-- Profile settings: display name, avatar, accent color presets/custom HEX, background color, card style, seasonal effects (Halloween/Christmas/Birthday), a custom image background, image removal and a profile appearance reset.
-- Existing library, playlists and Music-folder permissions remain stored under the existing AsyncStorage keys and version-1 payload; new settings and playback statistics are additive.
-
-The custom background/avatar images are copied into the app-private Documents directory. Resetting the profile removes those copies but does not delete audio files, playlists or library metadata.
+- Увеличены активные зоны кнопок и ползунок перемотки.
+- Свайпы между вкладками и мягкая анимация смены экранов.
+- Автоматические подборки «Недавно добавленные» и «Часто прослушиваемые».
+- Счётчик прослушиваний и время последнего запуска для каждого трека.
+- Дата исходного файла, фильтр музыкальных папок и подключённая Music-папка.
+- Полная настройка профиля: имя, аватар, акцентный цвет, цвет фона, стиль карточек и сезонные режимы.
