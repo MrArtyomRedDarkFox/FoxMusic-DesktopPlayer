@@ -1,4 +1,4 @@
-# FoxsMusic Mobile — Android 0.1.0
+# FoxsMusic Mobile — Android 0.1.1
 
 Отдельное нативное приложение FoxsMusic для Android. Desktop-проект на Electron не изменяется: мобильная версия находится в отдельной папке `mobile/`.
 

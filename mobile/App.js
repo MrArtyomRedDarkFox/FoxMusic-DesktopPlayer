@@ -62,7 +62,7 @@ const COPY = {
     alreadyAdded: 'Этот трек уже есть в плейлисте.', saved: 'Сохранено',
     language: 'Язык интерфейса', storage: 'Хранилище музыки', storageHint: 'Аудиофайлы копируются в приватную папку приложения. Полный доступ ко всем файлам телефона не запрашивается.',
     background: 'Фоновое воспроизведение', backgroundOn: 'Поддерживается через системное медиа-уведомление и экран блокировки.',
-    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.0 · Android MVP',
+    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.1 · Android MVP',
     importDone: 'Импорт завершён', imported: 'Добавлено файлов', skipped: 'Пропущено неподдерживаемых или повторных файлов',
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
@@ -88,7 +88,7 @@ const COPY = {
     alreadyAdded: 'This track is already in the playlist.', saved: 'Saved',
     language: 'Interface language', storage: 'Music storage', storageHint: 'Audio files are copied into the app private folder. Full access to phone storage is not requested.',
     background: 'Background playback', backgroundOn: 'Supported through the system media notification and lock screen.',
-    supported: 'Supported formats', about: 'About', version: 'Version 0.1.0 · Android MVP',
+    supported: 'Supported formats', about: 'About', version: 'Version 0.1.1 · Android MVP',
     importDone: 'Import complete', imported: 'Files added', skipped: 'Unsupported or duplicate files skipped',
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
@@ -114,7 +114,7 @@ const COPY = {
     alreadyAdded: 'Dieser Titel ist bereits in der Playlist.', saved: 'Gespeichert',
     language: 'Oberflächensprache', storage: 'Musikspeicher', storageHint: 'Audiodateien werden in den privaten App-Ordner kopiert. Es wird kein vollständiger Speicherzugriff angefordert.',
     background: 'Hintergrundwiedergabe', backgroundOn: 'Über die System-Medienbenachrichtigung und den Sperrbildschirm verfügbar.',
-    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.0 · Android MVP',
+    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.1 · Android MVP',
     importDone: 'Import abgeschlossen', imported: 'Dateien hinzugefügt', skipped: 'Nicht unterstützte oder doppelte Dateien übersprungen',
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
@@ -644,7 +644,7 @@ async function importMusicFolder() {
             <Text style={styles.compactHeroCaption}>YOUR MUSIC · YOUR RULES</Text>
             <View style={styles.equalizerRow}>{[8,15,11,22,13,28,17,10,23,14,30,18,9,21,13,26,16,10].map((h, i) => <View key={i} style={[styles.equalizerBar, {height: h}]} />)}</View>
           </View>
-          <Image source={require('./assets/fox-headphones.png')} style={styles.compactHeroLogo} resizeMode="contain" />
+          <Image source={require('./assets/desktop-logo.png')} style={styles.compactHeroLogo} resizeMode="contain" />
         </View>
         <View style={styles.screenHeading}>
           <View>
@@ -691,7 +691,7 @@ async function importMusicFolder() {
     return (
       <View style={styles.loadingScreen}>
         <StatusBar barStyle="light-content" backgroundColor={C.background} />
-        <Image source={require('./assets/fox-headphones.png')} style={styles.loadingMascot} resizeMode="contain" />
+        <Image source={require('./assets/foxsmusic-logo.png')} style={styles.loadingMascot} resizeMode="contain" />
         <Text style={styles.loadingBrand}>FOXSMUSIC</Text>
         <ActivityIndicator color={C.red} style={{ marginTop: 22 }} />
       </View>
@@ -723,7 +723,7 @@ async function importMusicFolder() {
               ListHeaderComponent={renderLibraryHeader}
               ListEmptyComponent={(
                 <View style={styles.emptyState}>
-                  <View style={styles.emptyDisc}><Image source={require('./assets/fox-headphones.png')} style={styles.emptyMascot} resizeMode="cover" /></View>
+                  <Image source={require('./assets/foxsmusic-logo.png')} style={styles.emptyMascot} resizeMode="contain" />
                   <Text style={styles.emptyTitle}>{tracks.length ? t.noTracks : t.noTracks}</Text>
                   <Text style={styles.emptySubtitle}>{tracks.length ? t.noTracksHint : t.noTracksHint}</Text>
                   <Pressable onPress={importAudioFiles} style={styles.primaryButton}><Text style={styles.primaryButtonText}>{t.addFirst}</Text></Pressable>
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: C.background },
   appRoot: { flex: 1, backgroundColor: C.background },
   loadingScreen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.background },
-  loadingMascot: { width: 176, height: 176, borderRadius: 34, borderWidth: 1, borderColor: '#5B1A2B', backgroundColor: '#10070B' },
+  loadingMascot: { width: 220, height: 220, marginBottom: 2 },
   loadingBrand: { marginTop: 18, color: C.text, fontSize: 19, fontWeight: '900', letterSpacing: 4 },
   topBar: { height: 70, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#281820' },
   brandMark: { width: 42, height: 42, borderRadius: 13, backgroundColor: '#260A13', borderWidth: 1, borderColor: '#792033', alignItems: 'center', justifyContent: 'center', shadowColor: C.red, shadowOpacity: 0.23, shadowRadius: 13, elevation: 5 },
@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   compactHeroEyebrow: { color: '#B87585', fontSize: 7, letterSpacing: 1.5, fontWeight: '900' },
   compactHeroTitle: { color: C.text, fontSize: 17, lineHeight: 19, fontWeight: '900', marginTop: 6, letterSpacing: -0.4 },
   compactHeroCaption: { color: C.muted, fontSize: 6, letterSpacing: 1.1, marginTop: 5 },
-  compactHeroLogo: { width: 112, height: 112, marginRight: -4, opacity: 0.96 },
+  compactHeroLogo: { width: 108, height: 108, marginRight: -2, opacity: 0.98 },
   equalizerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 31, marginTop: 4 },
   equalizerBar: { width: 3, borderRadius: 2, backgroundColor: C.red, opacity: 0.8 },
   folderImportButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#48202B', backgroundColor: '#110B10', paddingHorizontal: 12, marginTop: -5, marginBottom: 13 },
@@ -1030,9 +1030,8 @@ const styles = StyleSheet.create({
   actionButtonTextSmall: { fontSize: 14 },
   actionButtonTextActive: { color: C.red },
   pressed: { opacity: 0.72, transform: [{ scale: 0.985 }] },
-  emptyState: { alignItems: 'center', paddingTop: 44, paddingHorizontal: 26 },
-  emptyDisc: { width: 112, height: 112, borderRadius: 34, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: '#10070B', borderWidth: 1, borderColor: '#8D233D', marginBottom: 18, shadowColor: C.red, shadowOpacity: 0.35, shadowRadius: 14, elevation: 7 },
-  emptyMascot: { width: 112, height: 112 },
+  emptyState: { alignItems: 'center', paddingTop: 24, paddingHorizontal: 26 },
+  emptyMascot: { width: 218, height: 218, marginBottom: 14 },
   emptyDiscText: { color: C.red, fontSize: 42, fontWeight: '300' },
   emptyTitle: { color: C.text, fontSize: 16, fontWeight: '800', textAlign: 'center' },
   emptySubtitle: { color: C.muted, fontSize: 11, lineHeight: 18, marginTop: 8, textAlign: 'center' },

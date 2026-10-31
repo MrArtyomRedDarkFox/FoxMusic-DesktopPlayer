@@ -2,13 +2,13 @@
   "expo": {
     "name": "FoxsMusic",
     "slug": "foxsmusic-android",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.artyomreddarkfox.foxsmusic.mobile",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#08070a"
@@ -48,7 +48,7 @@
     ],
     "extra": {
       "product": "FoxsMusic Mobile",
-      "desktopRepository": "MrArtyomRedDarkFox/FoxsMusic-Desktop",
+      "desktopRepository": "MrArtyomRedDarkFox/FoxMusic-DesktopPlayer",
       "eas": {
         "projectId": "092d7caf-9463-42a8-a4ae-eb2a49b1cd39"
       }

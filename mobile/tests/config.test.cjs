@@ -55,3 +55,14 @@ test('preview EAS profile creates an installable APK', () => {
   assert.equal(eas.build.preview.distribution, 'internal');
   assert.equal(eas.build.preview.android.buildType, 'apk');
 });
+
+
+test('mobile branding uses the DP hero mark and the desktop fox emblem in empty/loading states', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.ok(fs.existsSync(path.join(root, 'assets', 'foxsmusic-logo.png')));
+  assert.match(appSource, /compactHero/);
+  assert.match(appSource, /FOXSMUSIC ORIGINAL/);
+  assert.match(appSource, /require\('\.\/assets\/desktop-logo\.png'\)/);
+  assert.match(appSource, /require\('\.\/assets\/foxsmusic-logo\.png'\)/);
+  assert.doesNotMatch(appSource, /fox-headphones\.png/);
+});
