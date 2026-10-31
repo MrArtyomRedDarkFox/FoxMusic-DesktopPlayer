@@ -103,9 +103,13 @@
       {
         "provider": "github",
         "owner": "MrArtyomRedDarkFox",
-        "repo": "FoxsMusic-Desktop",
+        "repo": "FoxMusic-DesktopPlayer",
         "releaseType": "release"
       }
     ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MrArtyomRedDarkFox/FoxMusic-DesktopPlayer.git"
   }
 }
