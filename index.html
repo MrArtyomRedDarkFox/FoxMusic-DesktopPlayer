@@ -74,8 +74,17 @@
           <option value="normal">Обычный</option>
           <option value="halloween">Хэллоуинский</option>
           <option value="christmas">Новогодний</option>
+          <option value="birthday">День рождения</option>
         </select>
       </label>
+      <div class="profile-background-control">
+        <div class="settings-row-copy"><strong id="profileBackgroundLabel">Фоновая картинка</strong><small id="profileBackgroundDescription">Выбери собственное изображение для фона FoxsMusic. Оно сохранится после перезапуска.</small></div>
+        <div class="settings-actions-inline profile-background-actions">
+          <button type="button" class="settings-library-audit-btn" id="chooseProfileBackgroundBtn">Выбрать картинку</button>
+          <button type="button" class="settings-library-audit-btn" id="removeProfileBackgroundBtn" hidden>Удалить картинку</button>
+        </div>
+        <small class="library-health-note" id="profileBackgroundStatus" aria-live="polite">Используется стандартный фон FoxsMusic.</small>
+      </div>
       <label class="appearance-control appearance-color-control" for="profileAccentColor"><span id="profileColorLabel">Основной цвет</span>
         <span class="appearance-color-wrap"><input id="profileAccentColor" type="color" value="#ff1f35" aria-label="Основной цвет"><code id="profileAccentHex">#FF1F35</code></span>
       </label>
@@ -435,14 +444,120 @@
             </g>
             <g class="winter-snowfall"><use href="#snowflake" x="64" y="73" class="snowflake snowflake-01"/><use href="#snowflake" x="132" y="156" class="snowflake snowflake-02"/><use href="#snowflake" x="190" y="105" class="snowflake snowflake-03"/><use href="#snowflake" x="273" y="230" class="snowflake snowflake-04"/><use href="#snowflake" x="347" y="92" class="snowflake snowflake-05"/><use href="#snowflake" x="407" y="189" class="snowflake snowflake-06"/><use href="#snowflake" x="558" y="66" class="snowflake snowflake-07"/><use href="#snowflake" x="630" y="231" class="snowflake snowflake-08"/><use href="#snowflake" x="702" y="113" class="snowflake snowflake-09"/><use href="#snowflake" x="755" y="202" class="snowflake snowflake-10"/><use href="#snowflake" x="841" y="80" class="snowflake snowflake-11"/><use href="#snowflake" x="902" y="163" class="snowflake snowflake-12"/><use href="#snowflake" x="1015" y="112" class="snowflake snowflake-13"/><use href="#snowflake" x="1080" y="220" class="snowflake snowflake-14"/><use href="#snowflake" x="1156" y="86" class="snowflake snowflake-15"/><use href="#snowflake" x="116" y="262" class="snowflake snowflake-16"/><use href="#snowflake" x="319" y="35" class="snowflake snowflake-17"/><use href="#snowflake" x="519" y="273" class="snowflake snowflake-18"/><use href="#snowflake" x="800" y="32" class="snowflake snowflake-19"/><use href="#snowflake" x="1095" y="46" class="snowflake snowflake-20"/><use href="#snowflake" x="235" y="42" class="snowflake snowflake-21"/><use href="#snowflake" x="475" y="142" class="snowflake snowflake-22"/><use href="#snowflake" x="585" y="176" class="snowflake snowflake-23"/><use href="#snowflake" x="668" y="44" class="snowflake snowflake-24"/><use href="#snowflake" x="780" y="263" class="snowflake snowflake-25"/><use href="#snowflake" x="955" y="54" class="snowflake snowflake-26"/><use href="#snowflake" x="1120" y="276" class="snowflake snowflake-27"/><use href="#snowflake" x="36" y="191" class="snowflake snowflake-28"/><use href="#snowflake" x="320" y="191" class="snowflake snowflake-29"/><use href="#snowflake" x="690" y="265" class="snowflake snowflake-30"/><use href="#snowflake" x="990" y="197" class="snowflake snowflake-31"/><use href="#snowflake" x="870" y="268" class="snowflake snowflake-32"/></g>
           </svg>
+          <svg class="seasonal-art birthday-art" viewBox="0 0 1200 300" preserveAspectRatio="none" focusable="false">
+            <defs>
+              <radialGradient id="birthdayBackdrop" cx="52%" cy="52%" r="82%"><stop offset="0" stop-color="#241723"/><stop offset=".48" stop-color="#130e17"/><stop offset="1" stop-color="#07070b"/></radialGradient>
+              <radialGradient id="birthdayHalo"><stop offset="0" stop-color="#ffd98e" stop-opacity=".54"/><stop offset=".34" stop-color="#dba0b9" stop-opacity=".20"/><stop offset=".72" stop-color="#8e78a7" stop-opacity=".07"/><stop offset="1" stop-color="#8e78a7" stop-opacity="0"/></radialGradient>
+              <radialGradient id="birthdayFlameAura"><stop offset="0" stop-color="#ffe7a4" stop-opacity=".56"/><stop offset=".34" stop-color="#ffbd79" stop-opacity=".25"/><stop offset=".72" stop-color="#e7a1ba" stop-opacity=".08"/><stop offset="1" stop-color="#e7a1ba" stop-opacity="0"/></radialGradient>
+              <filter id="birthdayAuraBlur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="10"/></filter>
+              <linearGradient id="birthdayCakeTop" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0f4"/><stop offset=".5" stop-color="#f4d9ff"/><stop offset="1" stop-color="#e8c5f2"/></linearGradient>
+              <linearGradient id="birthdayCakeBottom" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffd9e5"/><stop offset="1" stop-color="#f2a9c6"/></linearGradient>
+              <linearGradient id="birthdayIcing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf4"/><stop offset="1" stop-color="#ffe8f1"/></linearGradient>
+              <linearGradient id="birthdayPlate" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff9e8"/><stop offset="1" stop-color="#e9c8d9"/></linearGradient>
+              <linearGradient id="birthdayFlame" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff8c72"/><stop offset=".5" stop-color="#ffd27c"/><stop offset="1" stop-color="#fffbe2"/></linearGradient>
+              <filter id="birthdaySoftGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <g id="birthdayCandyShape">
+                <path d="M-23 0L-36 -10L-33 0L-36 10L-23 0M23 0L36 -10L33 0L36 10L23 0" fill="#f6a5c4" stroke="#fff0f5" stroke-width="2" stroke-linejoin="round"/>
+                <rect x="-25" y="-11" width="50" height="22" rx="10" fill="#f6a5c4" stroke="#fff4f7" stroke-width="2"/>
+                <path d="M-12 -9L-4 9M1 -9L9 9" stroke="#fff8df" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+              </g>
+              <g id="birthdaySparkle" fill="none" stroke="#fff4c7" stroke-width="2" stroke-linecap="round"><path d="M0 -9V9M-9 0H9"/><path d="M-5 -5L5 5M5 -5L-5 5" stroke-width="1" opacity=".65"/></g>
+            </defs>
+            <rect class="birthday-night-backdrop" x="0" y="0" width="1200" height="300" fill="url(#birthdayBackdrop)"/>
+            <ellipse class="birthday-center-warmth" cx="620" cy="174" rx="250" ry="145" fill="url(#birthdayHalo)" opacity=".72"/>
+            <g class="birthday-candle-auras" aria-hidden="true" filter="url(#birthdayAuraBlur)">
+              <ellipse class="birthday-candle-aura aura-left" cx="575" cy="106" rx="48" ry="77" fill="url(#birthdayFlameAura)"/>
+              <ellipse class="birthday-candle-aura aura-main" cx="620" cy="99" rx="56" ry="88" fill="url(#birthdayFlameAura)"/>
+              <ellipse class="birthday-candle-aura aura-right" cx="665" cy="106" rx="48" ry="77" fill="url(#birthdayFlameAura)"/>
+            </g>
+            <g class="birthday-confetti" aria-hidden="true">
+              <rect class="birthday-confetti-piece confetti-a" x="70" y="-20" width="7" height="16" rx="3" fill="#f28eb8"/>
+              <circle class="birthday-confetti-piece confetti-b" cx="255" cy="18" r="5" fill="#f4c96c"/>
+              <path class="birthday-confetti-piece confetti-c" d="M370 8l9 14-9 14-9-14Z" fill="#b9a4ed"/>
+              <rect class="birthday-confetti-piece confetti-d" x="820" y="-16" width="7" height="15" rx="3" fill="#87cdbb"/>
+              <circle class="birthday-confetti-piece confetti-e" cx="1020" cy="12" r="5" fill="#f28eb8"/>
+              <path class="birthday-confetti-piece confetti-f" d="M1144 5l9 14-9 14-9-14Z" fill="#f4c96c"/>
+              <rect class="birthday-confetti-piece confetti-g" x="170" y="72" width="6" height="13" rx="3" fill="#9cc9ed"/>
+              <circle class="birthday-confetti-piece confetti-h" cx="1080" cy="92" r="4" fill="#b9a4ed"/>
+              <rect class="birthday-confetti-piece confetti-i" x="42" y="58" width="5" height="12" rx="2" fill="#d99bb8"/>
+              <path class="birthday-confetti-piece confetti-j" d="M142 118l6 10-6 10-6-10Z" fill="#d6c18b"/>
+              <circle class="birthday-confetti-piece confetti-k" cx="218" cy="260" r="3.5" fill="#9fcac1"/>
+              <rect class="birthday-confetti-piece confetti-l" x="322" y="164" width="5" height="13" rx="2" fill="#b9a4ed"/>
+              <path class="birthday-confetti-piece confetti-m" d="M408 15l5 9-5 9-5-9Z" fill="#e6a6c1"/>
+              <circle class="birthday-confetti-piece confetti-n" cx="476" cy="244" r="3.2" fill="#d2b66f"/>
+              <rect class="birthday-confetti-piece confetti-o" x="505" y="108" width="4" height="11" rx="2" fill="#91c9bd"/>
+              <path class="birthday-confetti-piece confetti-p" d="M716 20l6 10-6 10-6-10Z" fill="#c3addf"/>
+              <circle class="birthday-confetti-piece confetti-q" cx="758" cy="268" r="3.5" fill="#e8a1bf"/>
+              <rect class="birthday-confetti-piece confetti-r" x="784" y="136" width="5" height="13" rx="2" fill="#d7c18a"/>
+              <path class="birthday-confetti-piece confetti-s" d="M898 240l6 10-6 10-6-10Z" fill="#9fcac1"/>
+              <circle class="birthday-confetti-piece confetti-t" cx="940" cy="27" r="3.4" fill="#e2a4c0"/>
+              <rect class="birthday-confetti-piece confetti-u" x="988" y="198" width="5" height="12" rx="2" fill="#b8a6df"/>
+              <path class="birthday-confetti-piece confetti-v" d="M1082 112l5 9-5 9-5-9Z" fill="#d4ba7e"/>
+              <circle class="birthday-confetti-piece confetti-w" cx="1164" cy="188" r="3.2" fill="#9ec9c2"/>
+              <rect class="birthday-confetti-piece confetti-x" x="1128" y="276" width="5" height="12" rx="2" fill="#e5a3bd"/>
+            </g>
+            <g class="birthday-sweets" aria-hidden="true">
+              <g transform="translate(92 92) rotate(-18)"><g class="birthday-candy candy-fall-a"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(250 184) rotate(24) scale(.72)"><g class="birthday-candy candy-fall-b"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(365 60) rotate(14) scale(.62)"><g class="birthday-candy candy-fall-c"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(870 68) rotate(-20) scale(.78)"><g class="birthday-candy candy-fall-d"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(1030 155) rotate(18) scale(.9)"><g class="birthday-candy candy-fall-e"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(1150 64) rotate(-12) scale(.64)"><g class="birthday-candy candy-fall-f"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(30 230) rotate(12) scale(.55)"><g class="birthday-candy candy-fall-g"><use href="#birthdayCandyShape"/></g></g>
+              <g transform="translate(1170 245) rotate(-24) scale(.55)"><g class="birthday-candy candy-fall-h"><use href="#birthdayCandyShape"/></g></g>
+            </g>
+            <g class="birthday-sparkles" aria-hidden="true">
+              <use href="#birthdaySparkle" x="430" y="96" class="birthday-sparkle sparkle-a"/>
+              <use href="#birthdaySparkle" x="820" y="215" class="birthday-sparkle sparkle-b"/>
+              <use href="#birthdaySparkle" x="970" y="65" class="birthday-sparkle sparkle-c"/>
+              <use href="#birthdaySparkle" x="305" y="245" class="birthday-sparkle sparkle-d"/>
+              <use href="#birthdaySparkle" x="548" y="77" class="birthday-sparkle sparkle-candle sparkle-e"/>
+              <use href="#birthdaySparkle" x="692" y="83" class="birthday-sparkle sparkle-candle sparkle-f"/>
+              <use href="#birthdaySparkle" x="623" y="58" class="birthday-sparkle sparkle-candle sparkle-g"/>
+            </g>
+            <g class="birthday-candle-glints" aria-hidden="true">
+              <circle class="birthday-glint glint-a" cx="557" cy="119" r="2.2" fill="#ffe9ae"/>
+              <circle class="birthday-glint glint-b" cx="643" cy="84" r="1.8" fill="#fff3c8"/>
+              <circle class="birthday-glint glint-c" cx="683" cy="130" r="2.1" fill="#ffd48e"/>
+              <circle class="birthday-glint glint-d" cx="592" cy="69" r="1.7" fill="#ffe7b3"/>
+              <circle class="birthday-glint glint-e" cx="650" cy="143" r="1.6" fill="#f3c7dd"/>
+            </g>
+            <g class="birthday-cake">
+              <ellipse cx="620" cy="274" rx="142" ry="13" fill="#a77e9e" opacity=".18"/>
+              <ellipse cx="620" cy="260" rx="141" ry="18" fill="url(#birthdayPlate)" stroke="#fff5e8" stroke-width="3"/>
+              <ellipse cx="620" cy="257" rx="120" ry="11" fill="#fff8f0" opacity=".65"/>
+              <rect x="515" y="205" width="210" height="57" rx="13" fill="url(#birthdayCakeBottom)" stroke="#fff0f5" stroke-width="3"/>
+              <path d="M516 216Q535 225 552 216T589 216T626 216T663 216T700 216T724 216V230Q706 240 687 230T650 230T613 230T576 230T539 230T516 230Z" fill="url(#birthdayIcing)"/>
+              <path d="M526 248Q543 238 560 248T594 248T628 248T662 248T696 248T715 248" fill="none" stroke="#e88bb4" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+              <g fill="#fff7ed" stroke="#e9a0be" stroke-width="1.5"><circle cx="540" cy="241" r="4"/><circle cx="576" cy="251" r="4"/><circle cx="613" cy="241" r="4"/><circle cx="650" cy="251" r="4"/><circle cx="690" cy="241" r="4"/></g>
+              <rect x="548" y="158" width="144" height="54" rx="12" fill="url(#birthdayCakeTop)" stroke="#fff8ff" stroke-width="3"/>
+              <path d="M549 169Q565 178 580 169T611 169T642 169T673 169T692 169V184Q677 195 661 184T628 184T596 184T564 184T549 184Z" fill="#fffaf6"/>
+              <path d="M560 198Q574 189 588 198T616 198T644 198T672 198T684 198" fill="none" stroke="#c7a6ec" stroke-width="3" stroke-linecap="round"/>
+              <g fill="#f5c76f"><circle cx="571" cy="194" r="3.4"/><circle cx="600" cy="204" r="3.4"/><circle cx="630" cy="194" r="3.4"/><circle cx="660" cy="204" r="3.4"/></g>
+              <g class="birthday-candles">
+                <g transform="translate(575 125)"><rect x="-5" y="0" width="10" height="34" rx="3" fill="#8fcfbe" stroke="#f5fff7" stroke-width="1.5"/><path d="M-4 8H4M-4 18H4M-4 28H4" stroke="#fff7e8" stroke-width="3"/><path class="birthday-flame flame-left" d="M0 -3C-12 -13 -1 -25 1 -34C12 -22 12 -10 0 -3Z" fill="url(#birthdayFlame)" filter="url(#birthdaySoftGlow)"/><ellipse class="birthday-flame-core" cx="0" cy="-18" rx="2" ry="6" fill="#fff6d8"/></g>
+                <g transform="translate(620 119)"><rect x="-5" y="0" width="10" height="40" rx="3" fill="#f29bbd" stroke="#fff4f8" stroke-width="1.5"/><path d="M-4 9H4M-4 20H4M-4 31H4" stroke="#fff8e8" stroke-width="3"/><path class="birthday-flame flame-main" d="M0 -3C-12 -13 -1 -25 1 -34C12 -22 12 -10 0 -3Z" fill="url(#birthdayFlame)" filter="url(#birthdaySoftGlow)"/><ellipse class="birthday-flame-core" cx="0" cy="-18" rx="2.2" ry="6.5" fill="#fff8df"/></g>
+                <g transform="translate(665 125)"><rect x="-5" y="0" width="10" height="34" rx="3" fill="#b9a4ed" stroke="#fff7ff" stroke-width="1.5"/><path d="M-4 8H4M-4 18H4M-4 28H4" stroke="#fff7e8" stroke-width="3"/><path class="birthday-flame flame-right" d="M0 -3C-12 -13 -1 -25 1 -34C12 -22 12 -10 0 -3Z" fill="url(#birthdayFlame)" filter="url(#birthdaySoftGlow)"/><ellipse class="birthday-flame-core" cx="0" cy="-18" rx="2" ry="6" fill="#fff6d8"/></g>
+              </g>
+              <g fill="#fff5ec" stroke="#e9a0be" stroke-width="1.2"><path d="M557 157l5-10 5 10Z"/><path d="M673 157l5-10 5 10Z"/></g>
+            </g>
+            <g class="birthday-fire-sparks" aria-hidden="true">
+              <circle class="birthday-fire-spark fire-spark-a" cx="565" cy="94" r="2.1" fill="#ffe7ad"/>
+              <circle class="birthday-fire-spark fire-spark-b" cx="587" cy="76" r="1.7" fill="#fff2c8"/>
+              <circle class="birthday-fire-spark fire-spark-c" cx="611" cy="91" r="1.8" fill="#ffd58f"/>
+              <circle class="birthday-fire-spark fire-spark-d" cx="637" cy="70" r="1.7" fill="#fff0c4"/>
+              <circle class="birthday-fire-spark fire-spark-e" cx="660" cy="96" r="2" fill="#ffe3a1"/>
+              <circle class="birthday-fire-spark fire-spark-f" cx="680" cy="82" r="1.6" fill="#f4d8ec"/>
+            </g>
+          </svg>
           <div class="seasonal-snowfall-overlay"></div>
         </div>
         <div class="hero-grid"></div>
         <div class="hero-orbit orbit-a"></div><div class="hero-orbit orbit-b"></div>
         <div class="hero-glow"></div>
         <div class="hero-copy">
-          <span class="hero-tag"><span class="hero-tag-mark"></span> FOXSMUSIC ORIGINAL</span>
-          <h2>Feel the <em>dark.</em><br>Hear the <b>fire.</b></h2>
+          <span class="hero-tag"><span class="hero-tag-mark"></span> <span id="heroTagText">FOXSMUSIC ORIGINAL</span></span>
+          <h2><span class="hero-headline-default">Feel the <em>dark.</em><br>Hear the <b>fire.</b></span><span class="hero-headline-birthday" id="heroBirthdayHeadline">С днём рождения!</span></h2>
           <p>Твоя коллекция. Твой ритм.<br>Ни одного лишнего звука.</p>
           <button class="hero-cta" id="heroAddBtn"><span data-icon="plus"></span><span id="heroAddText">Загрузить музыку</span></button>
         </div>

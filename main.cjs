@@ -1,7 +1,7 @@
 'use strict';
 
 const {
-  app, BrowserWindow, Menu, shell, dialog, ipcMain, protocol
+  app, BrowserWindow, Menu, shell, dialog, ipcMain, protocol, nativeImage
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -17,18 +17,21 @@ const DIALOG_COPY = {
   ru: {
     addAudio: 'Добавить музыку в FoxsMusic', chooseOriginalAudio: 'Выбрать оригинальный аудиофайл',
     audioFiles: 'Аудиофайлы', allFiles: 'Все файлы', chooseLibraryFolder: 'Выбрать папку музыкальной библиотеки',
+    chooseProfileBackground: 'Выбрать фоновую картинку FoxsMusic', profileBackgroundFiles: 'Изображения',
     addSourceFolders: 'Добавить папки-источники для умной библиотеки', saveBackup: 'Сохранить резервную копию FoxsMusic',
     backupFile: 'Резервная копия FoxsMusic', chooseBackup: 'Выбрать резервную копию FoxsMusic'
   },
   en: {
     addAudio: 'Add music to FoxsMusic', chooseOriginalAudio: 'Choose original audio file',
     audioFiles: 'Audio files', allFiles: 'All files', chooseLibraryFolder: 'Choose music library folder',
+    chooseProfileBackground: 'Choose FoxsMusic background image', profileBackgroundFiles: 'Images',
     addSourceFolders: 'Add smart library source folders', saveBackup: 'Save FoxsMusic backup',
     backupFile: 'FoxsMusic backup', chooseBackup: 'Choose FoxsMusic backup'
   },
   de: {
     addAudio: 'Musik zu FoxsMusic hinzufügen', chooseOriginalAudio: 'Originalaudiodatei auswählen',
     audioFiles: 'Audiodateien', allFiles: 'Alle Dateien', chooseLibraryFolder: 'Musikbibliotheksordner auswählen',
+    chooseProfileBackground: 'FoxsMusic-Hintergrundbild auswählen', profileBackgroundFiles: 'Bilder',
     addSourceFolders: 'Quellordner zur intelligenten Bibliothek hinzufügen', saveBackup: 'FoxsMusic-Sicherung speichern',
     backupFile: 'FoxsMusic-Sicherung', chooseBackup: 'FoxsMusic-Sicherung auswählen'
   }
@@ -44,6 +47,8 @@ const audioTokens = new Map();
 const artworkCache = new Map();
 const MAX_ARTWORK_BYTES = 15 * 1024 * 1024;
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+const PROFILE_BACKGROUND_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const MAX_PROFILE_BACKGROUND_BYTES = 10 * 1024 * 1024;
 let musicMetadataModulePromise = null;
 let mainWindow;
 
@@ -353,6 +358,66 @@ ipcMain.handle('foxsmusic:select-source-folders', async (event, locale = 'ru') =
     } catch (_) { /* Skip folders that disappeared during selection. */ }
   }
   return { canceled: false, folderPaths };
+});
+
+function profileBackgroundDirectory() {
+  return path.join(app.getPath('userData'), 'profile-backgrounds');
+}
+function isManagedProfileBackgroundName(name) {
+  return typeof name === 'string' && /^[a-f0-9-]{36}\.(?:png|jpe?g|webp)$/i.test(name);
+}
+function profileBackgroundMime(extension) {
+  return ({ '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' })[extension.toLowerCase()] || 'application/octet-stream';
+}
+async function readManagedProfileBackground(name) {
+  if (!isManagedProfileBackgroundName(name)) throw new Error('Недопустимое имя фонового изображения');
+  const directory = profileBackgroundDirectory();
+  const filePath = path.join(directory, name);
+  if (path.dirname(filePath) !== directory) throw new Error('Недопустимый путь к фоновому изображению');
+  const stat = await fsp.stat(filePath);
+  if (!stat.isFile() || stat.size <= 0 || stat.size > MAX_PROFILE_BACKGROUND_BYTES) throw new Error('Фоновое изображение недоступно или слишком большое');
+  const image = nativeImage.createFromPath(filePath);
+  if (image.isEmpty()) throw new Error('Не удалось прочитать фоновое изображение');
+  const bytes = await fsp.readFile(filePath);
+  return { name, dataUrl: `data:${profileBackgroundMime(path.extname(filePath))};base64,${bytes.toString('base64')}` };
+}
+
+ipcMain.handle('foxsmusic:select-profile-background', async (event, locale = 'ru') => {
+  assertTrustedSender(event);
+  const copy = dialogCopy(locale);
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: copy.chooseProfileBackground,
+    properties: ['openFile'],
+    filters: [{ name: copy.profileBackgroundFiles, extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+  });
+  if (result.canceled || !result.filePaths[0]) return { canceled: true };
+  const sourcePath = await fsp.realpath(result.filePaths[0]);
+  const stat = await fsp.stat(sourcePath);
+  const extension = path.extname(sourcePath).toLowerCase();
+  if (!stat.isFile() || !PROFILE_BACKGROUND_EXTENSIONS.has(extension)) throw new Error('Выбери изображение PNG, JPG или WebP');
+  if (stat.size <= 0 || stat.size > MAX_PROFILE_BACKGROUND_BYTES) throw new Error('Изображение должно быть не больше 10 МБ');
+  const sourceImage = nativeImage.createFromPath(sourcePath);
+  if (sourceImage.isEmpty()) throw new Error('Не удалось прочитать выбранное изображение');
+  const directory = profileBackgroundDirectory();
+  await fsp.mkdir(directory, { recursive: true });
+  const name = `${crypto.randomUUID()}${extension}`;
+  const targetPath = path.join(directory, name);
+  await fsp.copyFile(sourcePath, targetPath);
+  const saved = await readManagedProfileBackground(name);
+  return { canceled: false, ...saved, originalName: path.basename(sourcePath) };
+});
+
+ipcMain.handle('foxsmusic:load-profile-background', async (event, name) => {
+  assertTrustedSender(event);
+  return readManagedProfileBackground(name);
+});
+
+ipcMain.handle('foxsmusic:remove-profile-background', async (event, name) => {
+  assertTrustedSender(event);
+  if (!isManagedProfileBackgroundName(name)) return { removed: false };
+  const filePath = path.join(profileBackgroundDirectory(), name);
+  try { await fsp.unlink(filePath); return { removed: true }; }
+  catch (error) { if (error?.code === 'ENOENT') return { removed: true }; throw error; }
 });
 
 ipcMain.handle('foxsmusic:scan-audio-folder-path', async (event, rootDirectory) => {
