@@ -2,13 +2,13 @@
   "expo": {
     "name": "FoxsMusic",
     "slug": "foxsmusic-android",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "android": {
       "package": "com.artyomreddarkfox.foxsmusic.mobile",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#08070a"

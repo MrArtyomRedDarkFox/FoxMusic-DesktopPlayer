@@ -81,3 +81,14 @@ test('audio picker imports are copied sequentially into persistent app storage',
   assert.match(appSource, /await LegacyFileSystem\.copyAsync\(\{ from: asset\.uri, to: destination \}\)/);
   assert.doesNotMatch(appSource, /using cache URI/);
 });
+
+
+test('player timeline has a large touch target, a larger thumb, and drag seeking', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /PanResponder\.create/);
+  assert.match(appSource, /onPanResponderMove/);
+  assert.match(appSource, /styles\.seekTouchArea/);
+  assert.match(appSource, /seekTouchArea: \{ height: 48/);
+  assert.match(appSource, /seekKnob: \{[^}]*width: 22, height: 22/);
+  assert.match(appSource, /accessibilityRole=\"adjustable\"/);
+});

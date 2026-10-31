@@ -6,6 +6,7 @@ import {
   Image,
   Modal,
   Platform,
+  PanResponder,
   Pressable,
   ScrollView,
   StatusBar,
@@ -65,7 +66,7 @@ const COPY = {
     alreadyAdded: 'Этот трек уже есть в плейлисте.', saved: 'Сохранено',
     language: 'Язык интерфейса', storage: 'Хранилище музыки', storageHint: 'Аудиофайлы копируются в приватную папку приложения. Полный доступ ко всем файлам телефона не запрашивается.',
     background: 'Фоновое воспроизведение', backgroundOn: 'Поддерживается через системное медиа-уведомление и экран блокировки.',
-    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.2 · Android MVP',
+    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.3 · Android MVP',
     importDone: 'Импорт завершён', imported: 'Добавлено файлов', skipped: 'Пропущено неподдерживаемых или повторных файлов',
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
@@ -91,7 +92,7 @@ const COPY = {
     alreadyAdded: 'This track is already in the playlist.', saved: 'Saved',
     language: 'Interface language', storage: 'Music storage', storageHint: 'Audio files are copied into the app private folder. Full access to phone storage is not requested.',
     background: 'Background playback', backgroundOn: 'Supported through the system media notification and lock screen.',
-    supported: 'Supported formats', about: 'About', version: 'Version 0.1.2 · Android MVP',
+    supported: 'Supported formats', about: 'About', version: 'Version 0.1.3 · Android MVP',
     importDone: 'Import complete', imported: 'Files added', skipped: 'Unsupported or duplicate files skipped',
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
@@ -117,7 +118,7 @@ const COPY = {
     alreadyAdded: 'Dieser Titel ist bereits in der Playlist.', saved: 'Gespeichert',
     language: 'Oberflächensprache', storage: 'Musikspeicher', storageHint: 'Audiodateien werden in den privaten App-Ordner kopiert. Es wird kein vollständiger Speicherzugriff angefordert.',
     background: 'Hintergrundwiedergabe', backgroundOn: 'Über die System-Medienbenachrichtigung und den Sperrbildschirm verfügbar.',
-    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.2 · Android MVP',
+    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.3 · Android MVP',
     importDone: 'Import abgeschlossen', imported: 'Dateien hinzugefügt', skipped: 'Nicht unterstützte oder doppelte Dateien übersprungen',
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
@@ -223,6 +224,28 @@ function AppContent() {
   const notificationAsked = useRef(false);
   const audioModeReady = useRef(null);
   const seekWidth = useRef(1);
+  const seekTrackRef = useRef(null);
+  const seekOriginX = useRef(0);
+  const seekDuration = useRef(0);
+  const seekPlaylist = useRef(playlist);
+  seekDuration.current = playback.duration;
+  seekPlaylist.current = playlist;
+
+  const seekToPageX = pageX => {
+    const duration = seekDuration.current;
+    if (!duration || !Number.isFinite(pageX)) return;
+    const width = Math.max(1, seekWidth.current);
+    const ratio = Math.max(0, Math.min(1, (pageX - seekOriginX.current) / width));
+    seekPlaylist.current.seekTo(ratio * duration);
+  };
+  const seekResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > Math.abs(gesture.dy),
+    onPanResponderGrant: event => seekToPageX(event.nativeEvent.pageX),
+    onPanResponderMove: event => seekToPageX(event.nativeEvent.pageX),
+    onPanResponderRelease: event => seekToPageX(event.nativeEvent.pageX),
+    onPanResponderTerminationRequest: () => false,
+  }), []);
   const t = COPY[language] || COPY.ru;
 
   const currentTrack = tracks.find(track => track.id === currentTrackId) || null;
@@ -881,18 +904,33 @@ async function importMusicFolder() {
                     </Pressable>
                   </View>
                   <View style={styles.seekBlock}>
-                    <Pressable
-                      onLayout={event => { seekWidth.current = Math.max(1, event.nativeEvent.layout.width); }}
-                      onPress={event => {
-                        if (!playback.duration) return;
-                        const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / seekWidth.current));
-                        playlist.seekTo(ratio * playback.duration);
+                    <View
+                      ref={seekTrackRef}
+                      {...seekResponder.panHandlers}
+                      onLayout={() => {
+                        seekTrackRef.current?.measureInWindow((x, _y, width) => {
+                          seekOriginX.current = x;
+                          seekWidth.current = Math.max(1, width);
+                        });
                       }}
-                      style={styles.seekTrack}
+                      style={styles.seekTouchArea}
+                      accessible
+                      accessibilityRole="adjustable"
+                      accessibilityLabel="Playback timeline"
+                      accessibilityValue={{ min: 0, max: playback.duration || 0, now: Math.min(playback.currentTime || 0, playback.duration || 0), text: `${formatTime(playback.currentTime)} / ${formatTime(playback.duration)}` }}
+                      accessibilityActions={[{ name: 'increment', label: 'Forward 5 seconds' }, { name: 'decrement', label: 'Back 5 seconds' }]}
+                      onAccessibilityAction={event => {
+                        if (!playback.duration) return;
+                        const step = Math.max(5, playback.duration * 0.02);
+                        const delta = event.nativeEvent.actionName === 'increment' ? step : -step;
+                        playlist.seekTo(Math.max(0, Math.min(playback.duration, playback.currentTime + delta)));
+                      }}
                     >
-                      <View style={[styles.seekProgress, { width: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
-                      <View style={[styles.seekKnob, { left: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
-                    </Pressable>
+                      <View style={styles.seekTrack}>
+                        <View style={[styles.seekProgress, { width: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
+                        <View style={[styles.seekKnob, { left: `${playback.duration > 0 ? Math.min(100, (playback.currentTime / playback.duration) * 100) : 0}%` }]} />
+                      </View>
+                    </View>
                     <View style={styles.seekLabels}><Text style={styles.seekTime}>{formatTime(playback.currentTime)}</Text><Text style={styles.seekTime}>{formatTime(playback.duration)}</Text></View>
                   </View>
                   <View style={styles.transportRow}>
@@ -1174,12 +1212,13 @@ const styles = StyleSheet.create({
   playerTrackArtist: { color: C.muted, fontSize: 12, marginTop: 7 },
   playerHeart: { position: 'absolute', right: 0, top: 3, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   playerHeartText: { color: C.muted, fontSize: 24 },
-  seekBlock: { marginTop: 31, marginBottom: 21 },
-  seekTrack: { height: 8, borderRadius: 10, backgroundColor: '#38242D', justifyContent: 'center' },
-  seekProgress: { height: 8, borderRadius: 10, backgroundColor: C.red },
-  seekKnob: { position: 'absolute', marginLeft: -6, width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFF0F4', borderWidth: 2, borderColor: C.red },
-  seekLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  seekTime: { color: C.subtle, fontSize: 9, fontVariant: ['tabular-nums'] },
+  seekBlock: { marginTop: 25, marginBottom: 17 },
+  seekTouchArea: { height: 48, justifyContent: 'center', overflow: 'visible' },
+  seekTrack: { height: 10, borderRadius: 10, backgroundColor: '#38242D', justifyContent: 'center', overflow: 'visible' },
+  seekProgress: { height: 10, borderRadius: 10, backgroundColor: C.red },
+  seekKnob: { position: 'absolute', marginLeft: -11, width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFF0F4', borderWidth: 3, borderColor: C.red, elevation: 3 },
+  seekLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
+  seekTime: { color: C.subtle, fontSize: 11, fontVariant: ['tabular-nums'] },
   transportRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   mainPlayButton: { width: 68, height: 68, borderRadius: 24, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', shadowColor: C.red, shadowRadius: 16, shadowOpacity: 0.3, elevation: 8 },
   mainPlayGlyph: { color: '#FFF', fontSize: 26, fontWeight: '900' },
