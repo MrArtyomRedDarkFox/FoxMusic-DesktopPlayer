@@ -36,6 +36,27 @@ function formatTime(value) {
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
 }
 
+
+function sortTracks(tracks, mode = 'recent') {
+  const items = Array.isArray(tracks) ? [...tracks] : [];
+  const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+  const titleOf = track => String(track?.title || track?.fileName || '');
+  const artistOf = track => String(track?.artist || '');
+
+  if (mode === 'title') {
+    return items.sort((a, b) => collator.compare(titleOf(a), titleOf(b))
+      || collator.compare(artistOf(a), artistOf(b)));
+  }
+  if (mode === 'artist') {
+    return items.sort((a, b) => collator.compare(artistOf(a), artistOf(b))
+      || collator.compare(titleOf(a), titleOf(b)));
+  }
+  return items.sort((a, b) => {
+    const dateDifference = (Number(b?.addedAt) || 0) - (Number(a?.addedAt) || 0);
+    return dateDifference || collator.compare(titleOf(a), titleOf(b));
+  });
+}
+
 function createId(now = Date.now(), random = Math.random()) {
   return `${now.toString(36)}-${random.toString(36).slice(2, 10)}`;
 }
@@ -46,5 +67,6 @@ module.exports = {
   isSupportedAudio,
   parseTrackName,
   formatTime,
+  sortTracks,
   createId
 };

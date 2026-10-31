@@ -26,7 +26,7 @@ import {
   useAudioPlaylist,
   useAudioPlaylistStatus,
 } from 'expo-audio';
-import { createId, formatTime, isSupportedAudio, parseTrackName } from './src/core';
+import { createId, formatTime, isSupportedAudio, parseTrackName, sortTracks } from './src/core';
 
 const STORAGE_KEY = 'foxsmusic-mobile-library-v1';
 const MUSIC_FOLDER_KEY = 'foxsmusic-mobile-music-folder-v1';
@@ -50,7 +50,7 @@ const COPY = {
   ru: {
     library: 'Библиотека', playlists: 'Плейлисты', player: 'Плеер', settings: 'Настройки',
     edition: 'ANDROID EDITION', collection: 'ТВОЯ МУЗЫКА', localLibrary: 'Локальная библиотека',
-    import: 'Добавить музыку', importHint: 'Выбери аудиофайлы на телефоне', importFolder: 'Подключить папку Music', folderConnected: 'Папка Music подключена · изменить', scanningFolder: 'Сканируем папку Music…', addedOn: 'Добавлен', search: 'Поиск трека или исполнителя',
+    import: 'Добавить музыку', importHint: 'Выбери аудиофайлы на телефоне', importFolder: 'Подключить папку Music', folderConnected: 'Папка Music подключена · изменить', scanningFolder: 'Сканируем папку Music…', rescanFolder: 'Повторно сканировать папку', sortBy: 'СОРТИРОВКА', sortRecent: 'Недавно добавленные', sortTitle: 'По названию', sortArtist: 'По исполнителю', sources: 'ИСТОЧНИКИ МУЗЫКИ', allSources: 'Все папки', importedFiles: 'Импортированные файлы', addedOn: 'Добавлен', search: 'Поиск трека или исполнителя',
     all: 'Все', favorites: 'Избранное', tracks: 'треков', noTracks: 'Библиотека пока пуста',
     noTracksHint: 'Добавь музыку с телефона — файлы останутся внутри FoxsMusic.',
     addFirst: 'Выбрать аудиофайлы', unknownArtist: 'Неизвестный исполнитель',
@@ -66,7 +66,7 @@ const COPY = {
     alreadyAdded: 'Этот трек уже есть в плейлисте.', saved: 'Сохранено',
     language: 'Язык интерфейса', storage: 'Хранилище музыки', storageHint: 'Аудиофайлы копируются в приватную папку приложения. Полный доступ ко всем файлам телефона не запрашивается.',
     background: 'Фоновое воспроизведение', backgroundOn: 'Поддерживается через системное медиа-уведомление и экран блокировки.',
-    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.1.3 · Android MVP',
+    supported: 'Поддерживаемые форматы', about: 'О приложении', version: 'Версия 0.2.0 · Android',
     importDone: 'Импорт завершён', imported: 'Добавлено файлов', skipped: 'Пропущено неподдерживаемых или повторных файлов',
     importError: 'Не удалось импортировать файл', permissionTitle: 'Доступ к уведомлениям',
     permissionHint: 'Разрешение нужно Android для отображения системных кнопок управления музыкой.',
@@ -76,7 +76,7 @@ const COPY = {
   en: {
     library: 'Library', playlists: 'Playlists', player: 'Player', settings: 'Settings',
     edition: 'ANDROID EDITION', collection: 'YOUR MUSIC', localLibrary: 'Local library',
-    import: 'Add music', importHint: 'Choose audio files on your phone', importFolder: 'Connect Music folder', folderConnected: 'Music folder connected · change', scanningFolder: 'Scanning Music folder…', addedOn: 'Added', search: 'Search tracks or artists',
+    import: 'Add music', importHint: 'Choose audio files on your phone', importFolder: 'Connect Music folder', folderConnected: 'Music folder connected · change', scanningFolder: 'Scanning Music folder…', rescanFolder: 'Rescan connected folder', sortBy: 'SORT BY', sortRecent: 'Recently added', sortTitle: 'By title', sortArtist: 'By artist', sources: 'MUSIC SOURCES', allSources: 'All folders', importedFiles: 'Imported files', addedOn: 'Added', search: 'Search tracks or artists',
     all: 'All', favorites: 'Favorites', tracks: 'tracks', noTracks: 'Your library is empty',
     noTracksHint: 'Add music from your phone — files stay inside FoxsMusic.',
     addFirst: 'Choose audio files', unknownArtist: 'Unknown artist',
@@ -92,7 +92,7 @@ const COPY = {
     alreadyAdded: 'This track is already in the playlist.', saved: 'Saved',
     language: 'Interface language', storage: 'Music storage', storageHint: 'Audio files are copied into the app private folder. Full access to phone storage is not requested.',
     background: 'Background playback', backgroundOn: 'Supported through the system media notification and lock screen.',
-    supported: 'Supported formats', about: 'About', version: 'Version 0.1.3 · Android MVP',
+    supported: 'Supported formats', about: 'About', version: 'Version 0.2.0 · Android',
     importDone: 'Import complete', imported: 'Files added', skipped: 'Unsupported or duplicate files skipped',
     importError: 'Could not import file', permissionTitle: 'Notification access',
     permissionHint: 'Android uses this permission to show system music controls.',
@@ -102,7 +102,7 @@ const COPY = {
   de: {
     library: 'Mediathek', playlists: 'Playlists', player: 'Player', settings: 'Einstellungen',
     edition: 'ANDROID EDITION', collection: 'DEINE MUSIK', localLibrary: 'Lokale Mediathek',
-    import: 'Musik hinzufügen', importHint: 'Audiodateien auf dem Smartphone auswählen', importFolder: 'Musikordner verbinden', folderConnected: 'Musikordner verbunden · ändern', scanningFolder: 'Musikordner wird durchsucht…', addedOn: 'Hinzugefügt', search: 'Titel oder Interpret suchen',
+    import: 'Musik hinzufügen', importHint: 'Audiodateien auf dem Smartphone auswählen', importFolder: 'Musikordner verbinden', folderConnected: 'Musikordner verbunden · ändern', scanningFolder: 'Musikordner wird durchsucht…', rescanFolder: 'Musikordner erneut durchsuchen', sortBy: 'SORTIEREN NACH', sortRecent: 'Kürzlich hinzugefügt', sortTitle: 'Nach Titel', sortArtist: 'Nach Interpret', sources: 'MUSIKQUELLEN', allSources: 'Alle Ordner', importedFiles: 'Importierte Dateien', addedOn: 'Hinzugefügt', search: 'Titel oder Interpret suchen',
     all: 'Alle', favorites: 'Favoriten', tracks: 'Titel', noTracks: 'Deine Mediathek ist leer',
     noTracksHint: 'Füge Musik hinzu — die Dateien bleiben in FoxsMusic gespeichert.',
     addFirst: 'Audiodateien auswählen', unknownArtist: 'Unbekannter Interpret',
@@ -118,7 +118,7 @@ const COPY = {
     alreadyAdded: 'Dieser Titel ist bereits in der Playlist.', saved: 'Gespeichert',
     language: 'Oberflächensprache', storage: 'Musikspeicher', storageHint: 'Audiodateien werden in den privaten App-Ordner kopiert. Es wird kein vollständiger Speicherzugriff angefordert.',
     background: 'Hintergrundwiedergabe', backgroundOn: 'Über die System-Medienbenachrichtigung und den Sperrbildschirm verfügbar.',
-    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.1.3 · Android MVP',
+    supported: 'Unterstützte Formate', about: 'Über die App', version: 'Version 0.2.0 · Android',
     importDone: 'Import abgeschlossen', imported: 'Dateien hinzugefügt', skipped: 'Nicht unterstützte oder doppelte Dateien übersprungen',
     importError: 'Datei konnte nicht importiert werden', permissionTitle: 'Benachrichtigungszugriff',
     permissionHint: 'Android benötigt diese Berechtigung für die System-Musiksteuerung.',
@@ -206,6 +206,8 @@ function AppContent() {
   const [screen, setScreen] = useState('library');
   const [search, setSearch] = useState('');
   const [libraryFilter, setLibraryFilter] = useState('all');
+  const [sortMode, setSortMode] = useState('recent');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
   const [queueIds, setQueueIds] = useState([]);
   const [currentTrackId, setCurrentTrackId] = useState(null);
@@ -400,14 +402,22 @@ function AppContent() {
     } catch (_) {}
   }, [currentTrack, language, playlist]);
 
+  const sourceFolders = useMemo(() => [...new Set(
+    tracks.map(track => String(track.sourceFolder || '').trim()).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true })), [tracks]);
+
   const visibleTracks = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase();
-    return tracks.filter(track => {
+    const filtered = tracks.filter(track => {
       if (libraryFilter === 'favorites' && !track.favorite) return false;
+      const sourceFolder = String(track.sourceFolder || '').trim();
+      if (sourceFilter === 'imported' && sourceFolder) return false;
+      if (sourceFilter.startsWith('folder:') && sourceFolder !== sourceFilter.slice(7)) return false;
       if (!normalized) return true;
-      return `${track.title} ${track.artist || ''} ${track.fileName || ''}`.toLocaleLowerCase().includes(normalized);
+      return `${track.title} ${track.artist || ''} ${track.fileName || ''} ${sourceFolder}`.toLocaleLowerCase().includes(normalized);
     });
-  }, [tracks, search, libraryFilter]);
+    return sortTracks(filtered, sortMode);
+  }, [tracks, search, libraryFilter, sourceFilter, sortMode]);
 
   const getQueueForLibrary = () => tracks.map(track => track.id);
 
@@ -674,6 +684,28 @@ async function scanMusicFolderContents(folderUri, existingTracks = []) {
   return { folderName, importedTracks, skipped };
 }
 
+async function rescanConnectedMusicFolder() {
+  if (!musicFolderUri || importing || folderSyncing) return;
+  setFolderSyncing(true);
+  try {
+    const result = await scanMusicFolderContents(musicFolderUri, tracks);
+    if (result.importedTracks.length) {
+      setTracks(current => {
+        const existing = new Set(current.map(track => `${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`));
+        const fresh = result.importedTracks.filter(track => !existing.has(`${String(track.fileName || '').toLowerCase()}:${Number(track.size) || 0}`));
+        return [...current, ...fresh];
+      });
+      setQueueIds(current => [...new Set([...current, ...result.importedTracks.map(track => track.id)])]);
+    }
+    Alert.alert(t.importDone, `${t.imported}: ${result.importedTracks.length}\n${t.skipped}: ${result.skipped}`);
+  } catch (error) {
+    console.error('FoxsMusic mobile folder rescan error', error);
+    Alert.alert(t.importError, String(error?.message || error));
+  } finally {
+    setFolderSyncing(false);
+  }
+}
+
 async function importMusicFolder() {
   if (importing || folderSyncing) return;
   setImporting(true);
@@ -815,7 +847,18 @@ async function importMusicFolder() {
           </View>
           <Text style={styles.importBannerArrow}>›</Text>
         </Pressable>
-        <Pressable onPress={importMusicFolder} disabled={importing || folderSyncing} style={({ pressed }) => [styles.folderImportButton, pressed && styles.pressed]}><Text style={styles.folderImportGlyph}>▣</Text><Text style={styles.folderImportText}>{folderSyncing ? t.scanningFolder : musicFolderUri ? t.folderConnected : t.importFolder}</Text><Text style={styles.folderImportArrow}>›</Text></Pressable>
+        <View style={styles.folderActionsRow}>
+          <Pressable onPress={importMusicFolder} disabled={importing || folderSyncing} style={({ pressed }) => [styles.folderImportButton, musicFolderUri && styles.folderImportButtonConnected, pressed && styles.pressed]}>
+            <Text style={styles.folderImportGlyph}>▣</Text>
+            <Text numberOfLines={1} style={styles.folderImportText}>{folderSyncing ? t.scanningFolder : musicFolderUri ? t.folderConnected : t.importFolder}</Text>
+            <Text style={styles.folderImportArrow}>›</Text>
+          </Pressable>
+          {musicFolderUri && (
+            <Pressable onPress={rescanConnectedMusicFolder} disabled={importing || folderSyncing} accessibilityRole="button" accessibilityLabel={t.rescanFolder} style={({ pressed }) => [styles.folderRescanButton, pressed && styles.pressed]}>
+              {folderSyncing ? <ActivityIndicator size="small" color={C.red} /> : <Text style={styles.folderRescanGlyph}>↻</Text>}
+            </Pressable>
+          )}
+        </View>
         <View style={styles.searchWrap}>
           <Text style={styles.searchGlyph}>⌕</Text>
           <TextInput
@@ -831,9 +874,48 @@ async function importMusicFolder() {
         </View>
         <View style={styles.filterRow}>
           <Pressable onPress={() => setLibraryFilter('all')} style={[styles.filterChip, libraryFilter === 'all' && styles.filterChipActive]}><Text style={[styles.filterText, libraryFilter === 'all' && styles.filterTextActive]}>{t.all}</Text></Pressable>
-          <Pressable onPress={() => setLibraryFilter('favorites')} style={[styles.filterChip, libraryFilter === 'favorites' && styles.filterChipActive]}><Text style={[styles.filterText, libraryFilter === 'favorites' && styles.filterTextActive]}>♥ {t.favorites}</Text></Pressable>
+          <Pressable onPress={() => setLibraryFilter('favorites')} style={[styles.filterChip, libraryFilter === 'favorites' && styles.filterChipActive]}><Text style={[styles.filterText, libraryFilter === 'favorites' && styles.filterChipActive && styles.filterTextActive]}>♥ {t.favorites}</Text></Pressable>
           <Text style={styles.listCount}>{visibleTracks.length} {t.tracks}</Text>
         </View>
+        {tracks.length > 0 && (
+          <View style={styles.libraryToolsSection}>
+            <Text style={styles.libraryToolsLabel}>{t.sortBy}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolChips}>
+              {[
+                ['recent', t.sortRecent],
+                ['title', t.sortTitle],
+                ['artist', t.sortArtist],
+              ].map(([id, label]) => (
+                <Pressable key={id} onPress={() => setSortMode(id)} style={[styles.toolChip, sortMode === id && styles.toolChipActive]}>
+                  <Text style={[styles.toolChipText, sortMode === id && styles.toolChipTextActive]}>{label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            {(sourceFolders.length > 0 || tracks.some(track => !track.sourceFolder)) && (
+              <>
+                <Text style={styles.libraryToolsLabel}>{t.sources}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.toolChips}>
+                  <Pressable onPress={() => setSourceFilter('all')} style={[styles.toolChip, sourceFilter === 'all' && styles.toolChipActive]}>
+                    <Text style={[styles.toolChipText, sourceFilter === 'all' && styles.toolChipTextActive]}>{t.allSources}</Text>
+                  </Pressable>
+                  {sourceFolders.map(folder => {
+                    const id = `folder:${folder}`;
+                    return (
+                      <Pressable key={id} onPress={() => setSourceFilter(id)} style={[styles.toolChip, sourceFilter === id && styles.toolChipActive]}>
+                        <Text numberOfLines={1} style={[styles.toolChipText, sourceFilter === id && styles.toolChipTextActive]}>{folder}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  {tracks.some(track => !track.sourceFolder) && (
+                    <Pressable onPress={() => setSourceFilter('imported')} style={[styles.toolChip, sourceFilter === 'imported' && styles.toolChipActive]}>
+                      <Text style={[styles.toolChipText, sourceFilter === 'imported' && styles.toolChipTextActive]}>{t.importedFiles}</Text>
+                    </Pressable>
+                  )}
+                </ScrollView>
+              </>
+            )}
+          </View>
+        )}
       </View>
     );
   }
@@ -1147,7 +1229,11 @@ const styles = StyleSheet.create({
   compactHeroLogo: { width: 108, height: 108, marginRight: -2, opacity: 0.98 },
   equalizerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 31, marginTop: 4 },
   equalizerBar: { width: 3, borderRadius: 2, backgroundColor: C.red, opacity: 0.8 },
-  folderImportButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#48202B', backgroundColor: '#110B10', paddingHorizontal: 12, marginTop: -5, marginBottom: 13 },
+  folderActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -5, marginBottom: 13 },
+  folderImportButton: { minHeight: 40, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: '#48202B', backgroundColor: '#110B10', paddingHorizontal: 12 },
+  folderImportButtonConnected: { borderColor: '#663044' },
+  folderRescanButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#1A1017', borderWidth: 1, borderColor: '#48202B' },
+  folderRescanGlyph: { color: C.red, fontSize: 23, fontWeight: '800' },
   folderImportGlyph: { color: C.red, fontSize: 16, marginRight: 9 },
   folderImportText: { color: C.muted, fontSize: 10, fontWeight: '800', flex: 1 },
   folderImportArrow: { color: C.red, fontSize: 22 },
@@ -1169,6 +1255,13 @@ const styles = StyleSheet.create({
   searchInput: { color: C.text, flex: 1, height: 45, fontSize: 12 },
   clearSearch: { color: C.muted, fontSize: 23, paddingHorizontal: 3 },
   filterRow: { flexDirection: 'row', alignItems: 'center', marginTop: 15, marginBottom: 8, gap: 8 },
+  libraryToolsSection: { marginTop: 6, marginBottom: 10 },
+  libraryToolsLabel: { color: '#8E5361', fontSize: 8, fontWeight: '900', letterSpacing: 1.7, marginTop: 7, marginBottom: 7 },
+  toolChips: { flexDirection: 'row', gap: 7, paddingRight: 12 },
+  toolChip: { maxWidth: 190, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 18, backgroundColor: C.panel, borderWidth: 1, borderColor: C.line },
+  toolChipActive: { backgroundColor: '#45101D', borderColor: '#9C263C' },
+  toolChipText: { color: C.muted, fontSize: 9, fontWeight: '700' },
+  toolChipTextActive: { color: '#FFF0F3' },
   filterChip: { borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, backgroundColor: C.panel, borderWidth: 1, borderColor: C.line },
   filterChipActive: { backgroundColor: '#45101D', borderColor: '#9C263C' },
   filterText: { color: C.muted, fontSize: 10, fontWeight: '700' },

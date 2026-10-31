@@ -92,3 +92,28 @@ test('player timeline has a large touch target, a larger thumb, and drag seeking
   assert.match(appSource, /seekKnob: \{[^}]*width: 22, height: 22/);
   assert.match(appSource, /accessibilityRole=\"adjustable\"/);
 });
+
+
+test('library exposes sorting and source-folder filtering controls', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /sortMode/);
+  assert.match(appSource, /sortRecent/);
+  assert.match(appSource, /sortTitle/);
+  assert.match(appSource, /sortArtist/);
+  assert.match(appSource, /sourceFilter/);
+  assert.match(appSource, /sourceFolders/);
+  assert.match(appSource, /track\.sourceFolder/);
+});
+
+test('connected Music folder can be rescanned without reopening the system picker', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /async function rescanConnectedMusicFolder\(\)/);
+  assert.match(appSource, /scanMusicFolderContents\(musicFolderUri, tracks\)/);
+  assert.match(appSource, /onPress=\{rescanConnectedMusicFolder\}/);
+});
+
+test('mobile release versions are consistent and Android versionCode is incremented', () => {
+  assert.equal(packageConfig.version, '0.2.0');
+  assert.equal(appConfig.version, '0.2.0');
+  assert.equal(appConfig.android.versionCode, 5);
+});

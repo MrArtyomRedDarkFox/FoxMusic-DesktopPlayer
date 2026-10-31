@@ -7,6 +7,7 @@ const {
   isSupportedAudio,
   parseTrackName,
   formatTime,
+  sortTracks,
   createId
 } = require('../src/core');
 
@@ -58,4 +59,25 @@ test('formats elapsed time safely', () => {
 test('creates distinct non-empty local identifiers', () => {
   assert.equal(createId(1000, 0.5), 'rs-i');
   assert.notEqual(createId(1000, 0.1), createId(1000, 0.2));
+});
+
+
+test('sorts recently added tracks newest-first and puts undated tracks last', () => {
+  const tracks = [
+    { id: 'old', title: 'Old', addedAt: 100 },
+    { id: 'new', title: 'New', addedAt: 300 },
+    { id: 'unknown', title: 'Unknown' },
+  ];
+  assert.deepEqual(sortTracks(tracks, 'recent').map(track => track.id), ['new', 'old', 'unknown']);
+});
+
+test('sorts titles and artists naturally without mutating the original list', () => {
+  const tracks = [
+    { id: '10', title: 'Track 10', artist: 'Artist 10' },
+    { id: '2', title: 'Track 2', artist: 'Artist 2' },
+    { id: '1', title: 'Track 1', artist: 'Artist 1' },
+  ];
+  assert.deepEqual(sortTracks(tracks, 'title').map(track => track.id), ['1', '2', '10']);
+  assert.deepEqual(sortTracks(tracks, 'artist').map(track => track.id), ['1', '2', '10']);
+  assert.deepEqual(tracks.map(track => track.id), ['10', '2', '1']);
 });
