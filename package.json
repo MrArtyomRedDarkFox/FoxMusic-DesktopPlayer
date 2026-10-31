@@ -1,6 +1,6 @@
 {
   "name": "foxsmusic-desktop",
-  "version": "1.4.1",
+  "version": "1.4.4",
   "description": "FoxsMusic Player Pro — F11 native fullscreen shortcut",
   "main": "main.cjs",
   "author": "ArtyomRedDarkFox",
@@ -109,7 +109,7 @@
       {
         "provider": "github",
         "owner": "MrArtyomRedDarkFox",
-        "repo": "FoxsMusic-Desktop",
+        "repo": "FoxMusic-DesktopPlayer",
         "releaseType": "release"
       }
     ]

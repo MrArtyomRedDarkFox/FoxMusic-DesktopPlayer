@@ -4978,6 +4978,9 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   $('#closeSoundStudio').addEventListener('click', closeSoundStudio);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeAppSettings(); if (!ui.soundStudio.hidden) closeSoundStudio(); } });
   $$('.studio-control input[type="range"]').forEach(input => input.addEventListener('input', () => {
+    // Crossfade has its own input handler below. Do not run applyAudioSettings()
+    // here: it refreshes the controls from the old setting and would reset the slider.
+    if (input.id === 'crossfadeSlider') return;
     if (input.id === 'speedSlider') audioSettings.playbackRate = Number(input.value);
     else if (input.id === 'gainSlider') audioSettings.gain = Number(input.value);
     else if (input.id === 'bassSlider') audioSettings.bass = Number(input.value);
@@ -4989,64 +4992,7 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   }));
   $$('.studio-preset').forEach(button => button.addEventListener('click', () => applyPreset(button.dataset.preset)));
   $('#crossfadeSlider').addEventListener('input', event => { audioSettings.crossfadeSeconds = clamp(Number(event.target.value) || 0, 0, 8); const output = $('#crossfadeValue'); if (output) output.textContent = crossfadeSecondsLabel(audioSettings.crossfadeSeconds); setRangeFill(event.target); persistSettings(); });
-  // FOXSMUSIC-CROSSFADE-145: robust document-level pointer tracking.
-  // Track pointer movement on document rather than the native range element:
-  // Electron may retarget pointermove outside the slider during a drag.
-  {
-    const slider = $('#crossfadeSlider');
-    if (slider && slider.dataset.foxCrossfadePointerBound !== '1') {
-      let activePointerId = null;
-      const setValueFromPointer = clientX => {
-        const rect = slider.getBoundingClientRect();
-        if (!rect || !Number.isFinite(rect.width) || rect.width <= 0) return;
-        const min = slider.min === '' ? 0 : Number(slider.min);
-        const max = slider.max === '' ? 8 : Number(slider.max);
-        const step = Number(slider.step) > 0 ? Number(slider.step) : 1;
-        const inset = Math.min(11, rect.width / 2);
-        const usableWidth = Math.max(1, rect.width - inset * 2);
-        const ratio = clamp((clientX - rect.left - inset) / usableWidth, 0, 1);
-        const raw = min + ratio * (max - min);
-        const snapped = min + Math.round((raw - min) / step) * step;
-        const next = clamp(Number(snapped.toFixed(3)), min, max);
-        if (Number(slider.value) === next) return;
-        slider.value = String(next);
-        slider.dispatchEvent(new Event('input', { bubbles: true }));
-      };
-
-      const onPointerDown = event => {
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
-        if (event.isPrimary === false) return;
-        activePointerId = event.pointerId;
-        try { slider.focus({ preventScroll: true }); } catch (_) { slider.focus(); }
-        setValueFromPointer(event.clientX);
-      };
-      const onPointerMove = event => {
-        if (activePointerId === null || activePointerId !== event.pointerId) return;
-        if (event.cancelable) event.preventDefault();
-        setValueFromPointer(event.clientX);
-      };
-      const finishPointer = event => {
-        if (activePointerId === null || (event.pointerId !== undefined && activePointerId !== event.pointerId)) return;
-        activePointerId = null;
-        slider.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-      const cancelPointer = () => {
-        if (activePointerId === null) return;
-        activePointerId = null;
-        slider.dispatchEvent(new Event('change', { bubbles: true }));
-      };
-
-      slider.addEventListener('pointerdown', onPointerDown);
-      // Capture phase keeps receiving movement even when the pointer leaves the
-      // slider's bounds or Electron changes the event target during a drag.
-      document.addEventListener('pointermove', onPointerMove, true);
-      document.addEventListener('pointerup', finishPointer, true);
-      document.addEventListener('pointercancel', finishPointer, true);
-      window.addEventListener('blur', cancelPointer);
-      slider.dataset.foxCrossfadePointerBound = '1';
-    }
-  }
-
+  // Native HTML range input handles pointer and keyboard interaction.
   $('#normalizeToggle').addEventListener('change', event => { audioSettings.normalizeEnabled = !!event.target.checked; applyAudioSettings(); toast(audioSettings.normalizeEnabled ? 'Выравнивание громкости включено' : 'Выравнивание громкости выключено', 'success'); });
   $('#saveEqPresetBtn').addEventListener('click', saveCustomEqPreset);
   renderCustomEqPresets();

@@ -1,0 +1,16 @@
+УСТАНОВКА FOXSMUSIC DESKTOP 1.4.2
+
+1. Закрой FoxsMusic Desktop.
+2. Сделай копию своей текущей папки проекта и пользовательской библиотеки/данных.
+3. Распакуй этот архив в новую папку (не поверх старой версии).
+4. Открой в VS Code именно папку FoxMusic-DesktopPlayer-1.4.2-fixed, в которой находится package.json.
+5. В терминале выполни:
+   npm.cmd install
+   npm.cmd start
+
+Изменения в этом исправлении:
+- styles.css: единый компактный стиль crossfade slider.
+- app.js: pointermove не вызывает preventDefault.
+- package.json и package-lock.json: версия 1.4.2 и правильный GitHub updater repo.
+
+Не копируй только один файл из этой сборки поверх случайной Android-папки. Это отдельный Desktop Electron-проект.
