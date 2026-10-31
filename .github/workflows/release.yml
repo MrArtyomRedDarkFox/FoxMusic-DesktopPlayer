@@ -1,0 +1,41 @@
+name: Build and publish FoxsMusic releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.platform }} release assets
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: Windows
+            build_args: --win nsis portable
+          - os: ubuntu-latest
+            platform: Linux
+            build_args: --linux AppImage deb
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run regression tests
+        run: npm test
+      - name: Build and publish installers plus updater metadata
+        run: npx electron-builder ${{ matrix.build_args }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,35 @@
+{
+  "name": "foxsmusic-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "description": "FoxsMusic native Android music player",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild",
+    "build:apk": "eas build --platform android --profile preview",
+    "build:production": "eas build --platform android --profile production",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~58.0.0",
+    "expo-asset": "~58.0.19",
+    "expo-audio": "~58.0.10",
+    "expo-document-picker": "~58.0.4",
+    "expo-file-system": "~58.0.13",
+    "expo-splash-screen": "~58.0.12",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {}
+}

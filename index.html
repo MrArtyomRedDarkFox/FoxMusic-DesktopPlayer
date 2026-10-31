@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090607">
+  <meta name="description" content="FoxsMusic — красно-чёрный музыкальный плеер для твоей локальной библиотеки.">
+  <title>FoxsMusic Desktop</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <header class="topbar">
+    <button class="brand" id="brandHome" aria-label="FoxsMusic — главная">
+      <span class="brand-mark"><img src="assets/icon.png" alt="Логотип DP — Desktop Player"></span>
+      <span class="brand-word"><span>Foxs</span><b>Music</b><small>DESKTOP PLAYER</small></span>
+    </button>
+
+    <label class="searchbox" aria-label="Поиск музыки">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"></circle><path d="m16 16 4.4 4.4"></path></svg>
+      <input id="searchInput" type="search" placeholder="Поиск музыки, исполнителя..." autocomplete="off">
+      <kbd>Ctrl K</kbd>
+    </label>
+
+    <div class="top-actions">
+      <button class="icon-btn" id="nowPlayingBtn" title="Сейчас играет" aria-label="Открыть экран Сейчас играет" aria-haspopup="dialog" aria-controls="nowPlayingOverlay"><span class="icon-slot" data-icon="disc"></span></button>
+      <button class="icon-btn" id="appSettingsBtn" title="Настройки" aria-label="Настройки" aria-haspopup="dialog" aria-controls="appSettingsPanel"><span class="icon-slot" data-icon="settings"></span></button>
+      <button class="icon-btn" id="fullscreenBtn" title="Полноэкранный режим" aria-label="Полноэкранный режим"><span class="icon-slot" data-icon="expand"></span></button>
+      <button class="icon-btn subtle" id="helpBtn" title="Подсказка" aria-label="Подсказка"><span class="icon-slot" data-icon="info"></span></button>
+    </div>
+  </header>
+
+  <section class="app-settings-panel" id="appSettingsPanel" role="dialog" aria-labelledby="appSettingsHeading" aria-hidden="true" hidden>
+    <div class="app-settings-header">
+      <div><span class="settings-kicker"><span class="live-dot"></span> FOXSMUSIC SETTINGS</span><h2 id="appSettingsHeading">Настройки<span>.</span></h2></div>
+      <button class="settings-close" id="closeAppSettings" aria-label="Закрыть настройки" title="Закрыть">×</button>
+    </div>
+    <div class="app-settings-row language-row">
+      <div class="settings-row-copy"><strong id="settingsLanguageLabel">Язык интерфейса</strong><small id="settingsLanguageDescription">Выбери язык приложения.</small></div>
+      <select id="languageSelect" aria-label="Язык интерфейса">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+      </select>
+    </div>
+    <div class="settings-separator"></div>
+    <div class="app-settings-row effects-row">
+      <div class="settings-row-copy"><strong id="settingsEffectsLabel">Визуальные эффекты</strong><small id="settingsEffectsDescription">Свечение, движение фона и анимации.</small></div>
+      <button type="button" class="settings-switch is-on" id="effectsToggleBtn" role="switch" aria-checked="true" aria-label="Включить или выключить визуальные эффекты"><span></span></button>
+    </div>
+    <p class="settings-default-note" id="settingsDefaultNote">Эффекты включены по умолчанию.</p>
+    <div class="settings-separator"></div>
+    <section class="profile-appearance-settings" aria-labelledby="profileAppearanceHeading">
+      <div class="profile-appearance-heading">
+        <div><span class="settings-kicker"><span class="live-dot"></span> FOXSMUSIC PERSONAL</span><h3 id="profileAppearanceHeading">Оформление профиля<span>.</span></h3><p class="profile-appearance-description" id="profileAppearanceDescription">Настрой стиль, основной цвет и градиент.</p></div>
+      </div>
+      <div class="profile-appearance-preview" id="profileAppearancePreview" data-style="classic" data-gradient="crimson">
+        <img src="assets/icon.png" alt="" class="profile-preview-avatar">
+        <div class="profile-preview-copy"><strong>MrArtyomRedDarkFox</strong><small id="profilePreviewSubtitle">ПРОФИЛЬ FOXSMUSIC</small></div>
+        <span class="profile-preview-led" aria-hidden="true"></span>
+      </div>
+      <label class="appearance-control" for="profileStyleSelect"><span id="profileStyleLabel">Вид профиля</span>
+        <select id="profileStyleSelect" aria-label="Вид профиля">
+          <option value="classic">Классический</option>
+          <option value="neon">Неоновый</option>
+          <option value="glass">Стеклянный</option>
+        </select>
+      </label>
+      <label class="appearance-control" for="profileModeSelect"><span id="profileModeLabel">Сезонный режим</span>
+        <select id="profileModeSelect" aria-label="Сезонный режим">
+          <option value="normal">Обычный</option>
+          <option value="halloween">Хэллоуинский</option>
+          <option value="christmas">Новогодний</option>
+        </select>
+      </label>
+      <label class="appearance-control appearance-color-control" for="profileAccentColor"><span id="profileColorLabel">Основной цвет</span>
+        <span class="appearance-color-wrap"><input id="profileAccentColor" type="color" value="#ff1f35" aria-label="Основной цвет"><code id="profileAccentHex">#FF1F35</code></span>
+      </label>
+      <label class="appearance-control" for="profileGradientSelect"><span id="profileGradientLabel">Градиент</span>
+        <select id="profileGradientSelect" aria-label="Градиент">
+          <option value="crimson">Багровый</option>
+          <option value="ember">Тлеющий огонь</option>
+          <option value="violet">Фиолетовый</option>
+          <option value="ocean">Океан</option>
+          <option value="mono">Монохром</option>
+        </select>
+      </label>
+      <button type="button" class="settings-reset-appearance" id="resetProfileAppearanceBtn">Сбросить оформление профиля и цвет</button>
+    </section>
+    <div class="settings-author"><span id="settingsAuthorLabel">Автор:</span> <strong>MrArtyomRedDarkFox</strong></div>
+    <div class="settings-separator"></div>
+    <div class="settings-separator"></div>
+    <section class="library-health-settings" aria-labelledby="libraryHealthLabel">
+      <div class="settings-row-copy"><strong id="libraryHealthLabel">Умная библиотека</strong><small id="libraryHealthDescription">Найди точные дубликаты и проверь доступность оригинальных файлов.</small></div>
+      <button type="button" class="settings-library-audit-btn" id="analyzeLibraryBtn">Проверить библиотеку</button>
+      <small class="library-health-note" id="libraryHealthNote">Проверка записей в библиотеке. Оригинальные файлы не изменяются.</small>
+      <div class="settings-actions-inline source-library-actions"><button type="button" class="settings-library-audit-btn" id="manageLibrarySourcesBtn">Добавить папки-источники</button><button type="button" class="settings-library-audit-btn" id="scanSourceDuplicatesBtn">Найти дубликаты во всех источниках</button></div>
+      <div class="library-source-list" id="librarySourcesList" aria-live="polite"></div>
+      <small class="library-health-note" id="sourceDuplicatesNote">Проверяются все зарегистрированные папки-источники, включая вложенные папки. После подтверждения лишние точные копии перемещаются в системную корзину; один оригинал каждой группы остаётся.</small>
+    </section>
+    <div class="settings-separator"></div>
+    <section class="library-health-settings" aria-labelledby="backupLabel">
+      <div class="settings-row-copy"><strong id="backupLabel">Резервная копия</strong><small id="backupDescription">Сохрани плейлисты, настройки, метаданные и ссылки на оригинальные файлы.</small></div>
+      <div class="settings-actions-inline"><button type="button" class="settings-library-audit-btn" id="exportBackupBtn">Создать копию</button><button type="button" class="settings-library-audit-btn" id="importBackupBtn">Восстановить</button></div>
+      <small class="library-health-note">Оригинальные аудиофайлы в копию не включаются; сохраняются пути к ним.</small>
+    </section>
+    <div class="settings-separator"></div>
+    <section class="library-health-settings" aria-labelledby="updateLabel">
+      <div class="settings-row-copy"><strong id="updateLabel">Обновления FoxsMusic</strong><small id="updateDescription">Проверяй новые версии из GitHub Releases.</small></div>
+      <div class="settings-actions-inline"><button type="button" class="settings-library-audit-btn" id="checkUpdatesBtn">Проверить обновления</button><button type="button" class="settings-library-audit-btn" id="downloadUpdateBtn" hidden>Скачать</button><button type="button" class="settings-library-audit-btn" id="installUpdateBtn" hidden>Перезапустить</button></div>
+      <small class="library-health-note" id="updateStatusText">Автообновление заработает после публикации релизов в настроенном GitHub-репозитории.</small>
+    </section>
+    <div class="settings-separator"></div>
+    <div class="settings-clear-library-row">
+      <div class="settings-row-copy"><strong id="clearImportedTracksLabel">Очистить импортированные треки</strong><small id="clearImportedTracksDescription">Уберёт треки из FoxsMusic, но оставит оригинальные файлы на компьютере.</small></div>
+      <button type="button" class="settings-clear-library-btn" id="clearImportedTracksBtn">Очистить</button>
+    </div>
+  </section>
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-label">БИБЛИОТЕКА</div>
+      <nav class="primary-nav" aria-label="Разделы">
+        <button class="nav-item active" data-view="all"><span data-icon="music"></span><span>Моя музыка</span><span class="nav-count" id="libraryCount">0</span></button>
+        <button class="nav-item" data-view="favorites"><span data-icon="heart"></span><span>Избранное</span></button>
+        <button class="nav-item" data-view="playlists"><span data-icon="list"></span><span>Плейлисты</span></button>
+        <button class="nav-item" data-view="history"><span data-icon="clock"></span><span>История</span><span class="nav-count" id="historyCount">0</span></button>
+      </nav>
+
+      <button class="add-music-button" id="addMusicBtn"><span data-icon="plus"></span><span>Добавить музыку</span></button>
+      <button class="add-folder-link" id="addFolderBtn"><span data-icon="folder"></span><span id="importFolderText">Импортировать папку</span></button>
+      <div class="folder-source-status" id="folderSourceStatus" hidden>
+        <span class="folder-source-dot" aria-hidden="true"></span>
+        <span class="folder-source-copy"><small id="folderSourceLabel">ИСТОЧНИК БИБЛИОТЕКИ</small><span id="folderSourcePath"></span></span>
+        <button type="button" id="clearFolderSourceBtn" aria-label="Показать всю библиотеку" title="Показать всю библиотеку">×</button>
+      </div>
+
+      <div class="sidebar-section-heading"><span>ТВОИ ПЛЕЙЛИСТЫ</span><button class="mini-add" id="createPlaylistBtn" title="Создать плейлист" aria-label="Создать плейлист">+</button></div>
+      <nav class="playlist-nav" id="playlistNav" aria-label="Мои плейлисты"></nav>
+
+      <div class="sidebar-bottom">
+        <div class="mini-brand-logo"><img src="assets/foxsmusic-logo.png" alt=""><span>YOUR SOUND.<br><b>YOUR SHADOW.</b></span></div>
+        <div class="storage-note"><span class="storage-dot"></span><span id="storageText">Библиотека хранится на устройстве</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="dropZone">
+      <div class="content-heading">
+        <div>
+          <div class="eyebrow"><span class="live-dot"></span><span id="sloganText">ТВОЯ МУЗЫКА. ТВОИ ПРАВИЛА.</span></div>
+          <h1 id="viewTitle">Моя музыка<span class="title-period">.</span></h1>
+          <p id="viewSubtitle">Тёмный звук для твоего мира.</p>
+        </div>
+        <div class="heading-actions">
+          <span class="track-total" id="trackTotal">0 треков</span>
+          <button class="outline-button" id="sortBtn"><span data-icon="sort"></span><span>Недавно добавленные</span></button>
+        </div>
+      </div>
+
+      <section class="hero-card" aria-label="FoxsMusic">
+        <div class="hero-seasonal-scene" aria-hidden="true">
+          <svg class="seasonal-art halloween-art" viewBox="0 0 1200 300" preserveAspectRatio="none" focusable="false">
+            <defs>
+              <radialGradient id="pumpkinGlow"><stop offset="0" stop-color="#ff7b22" stop-opacity=".24"/><stop offset="1" stop-color="#ff7b22" stop-opacity="0"/></radialGradient>
+              <linearGradient id="pumpkinFill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff982f"/><stop offset=".48" stop-color="#b94616"/><stop offset="1" stop-color="#54200f"/></linearGradient>
+              <radialGradient id="candleHalo"><stop offset="0" stop-color="#ffd879" stop-opacity=".68"/><stop offset=".38" stop-color="#ff8b2a" stop-opacity=".32"/><stop offset="1" stop-color="#ff5a20" stop-opacity="0"/></radialGradient>
+              <radialGradient id="hauntedSideEyeAura"><stop offset="0" stop-color="#ff3a35" stop-opacity=".82"/><stop offset=".38" stop-color="#ff1c2f" stop-opacity=".40"/><stop offset="1" stop-color="#ff1428" stop-opacity="0"/></radialGradient>
+              <linearGradient id="candleWax" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#4b3035"/><stop offset=".24" stop-color="#d4b8a1"/><stop offset=".52" stop-color="#8b6870"/><stop offset=".78" stop-color="#d7c0a6"/><stop offset="1" stop-color="#382127"/></linearGradient>
+              <linearGradient id="candleFlameFill" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff4b19"/><stop offset=".45" stop-color="#ff9a25"/><stop offset=".82" stop-color="#ffe177"/><stop offset="1" stop-color="#fff6c9"/></linearGradient>
+              <filter id="halloweenGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <g id="spiderWeb" fill="none" stroke="#b7a1d0" stroke-width="1.25" stroke-opacity=".62"><path d="M0 0L180 0M0 0L0 130M0 0L145 95M0 0L105 125M0 0L52 130M0 40L100 40M0 72L65 72M0 102L35 102M35 0Q30 40 0 40M75 0Q65 75 0 72M120 0Q105 95 0 102M0 40Q70 20 100 40M0 72Q40 45 65 72M0 102Q20 80 35 102"/></g>
+              <g id="batShape" fill="#0a0509" stroke="#f27c37" stroke-width="1.1" stroke-opacity=".65"><path d="M0 17C-10 4-21 1-32 0L-23 15-39 10-30 28-16 20-9 31 0 25 9 31 16 20 30 28 39 10 23 15 32 0C21 1 10 4 0 17Z"/></g>
+              <g id="ghostShape" stroke="#d9d8f1" stroke-width="1.3" stroke-opacity=".76" fill="#dfeeff" fill-opacity=".34">
+                <path d="M0 -29C-14 -29 -24 -17 -24 -1V23L-13 16 -4 24 6 16 16 23 24 14V-1C24 -17 14 -29 0 -29Z"/>
+                <ellipse cx="-8" cy="-3" rx="3.1" ry="5" fill="#140f1c" stroke="none"/>
+                <ellipse cx="8" cy="-3" rx="3.1" ry="5" fill="#140f1c" stroke="none"/>
+                <path d="M-5 9Q0 13 5 9" fill="none" stroke="#140f1c" stroke-width="2" stroke-linecap="round"/>
+              </g>
+            </defs>
+            <g class="halloween-wind wind-gust wind-gust-a" fill="none" stroke="#c9b9df" stroke-width="1.35" stroke-linecap="round" stroke-dasharray="22 18">
+              <path d="M-26 156C34 132 79 139 126 151S207 160 270 138"/>
+              <path d="M-14 176C37 158 76 160 112 171S177 176 226 159" stroke-opacity=".58" stroke-width="1.1"/>
+            </g>
+            <g class="halloween-wind wind-gust wind-gust-b" fill="none" stroke="#c9b9df" stroke-width="1.25" stroke-linecap="round" stroke-dasharray="28 24">
+              <path d="M673 163C724 143 771 150 820 162S907 172 967 146"/>
+              <path d="M731 185C781 169 818 174 856 182S924 188 982 168" stroke-opacity=".58" stroke-width="1.1"/>
+            </g>
+            <g class="halloween-wind wind-gust wind-gust-c" fill="none" stroke="#d6c3e7" stroke-width="1.1" stroke-linecap="round" stroke-dasharray="18 23">
+              <path d="M942 224C1001 204 1048 211 1091 220S1162 227 1226 203"/>
+            </g>
+            <g class="halloween-wind wind-global" fill="none" stroke="#d9cce7" stroke-linecap="round" stroke-dasharray="46 31 12 25">
+              <path d="M-40 70C120 42 210 91 345 70S540 48 690 70 925 90 1060 63 1175 54 1240 69" stroke-width="1.35"/>
+              <path d="M-36 247C115 223 250 264 390 244S600 222 745 244 980 266 1115 239 1200 235 1240 244" stroke-width="1.05" stroke-opacity=".72"/>
+              <path d="M-30 201C94 187 160 207 255 194S450 179 565 195 785 214 920 192 1100 184 1235 202" stroke-width=".9" stroke-opacity=".5"/>
+            </g>
+            <g class="halloween-web halloween-web-left"><use href="#spiderWeb"/></g>
+            <g class="halloween-web halloween-web-right" transform="translate(1200 0) scale(-1 1)"><use href="#spiderWeb"/></g>
+            <g class="halloween-spider spider-left" transform="translate(20 121)"><path d="M0 -112V-12" stroke="#b7a1d0" stroke-opacity=".7" stroke-width="1.45" stroke-linecap="round"/><ellipse cy="-5" rx="5" ry="7" fill="#17101b" stroke="#e3d5f4" stroke-width="1"/><circle cy="3" r="3.6" fill="#17101b" stroke="#e3d5f4" stroke-width="1"/><g stroke="#e3d5f4" stroke-width="1.1" fill="none"><path d="M-4 -4L-12 -10 -17 -5M4 -4L12 -10 17 -5M-5 0L-14 3 -16 9M5 0L14 3 16 9M-3 4L-9 12 -13 12M3 4L9 12 13 12"/></g></g>
+            <g class="halloween-spider spider-right" transform="translate(1177 138)"><path d="M0 -129V-14" stroke="#b7a1d0" stroke-opacity=".65" stroke-width="1.45" stroke-linecap="round"/><ellipse cy="-6" rx="5" ry="7" fill="#17101b" stroke="#e3d5f4" stroke-width="1"/><circle cy="3" r="3.6" fill="#17101b" stroke="#e3d5f4" stroke-width="1"/><g stroke="#e3d5f4" stroke-width="1.1" fill="none"><path d="M-4 -4L-12 -10 -17 -5M4 -4L12 -10 17 -5M-5 0L-14 3 -16 9M5 0L14 3 16 9M-3 4L-9 12 -13 12M3 4L9 12 13 12"/></g></g>
+            <g class="seasonal-bat bat-a" transform="translate(292 51) scale(.78)"><use href="#batShape"/></g>
+            <g class="seasonal-bat bat-b" transform="translate(1000 53) scale(1.08)"><use href="#batShape"/></g>
+            <g class="seasonal-bat bat-c" transform="translate(400 232) scale(.48)"><use href="#batShape"/></g>
+            <!-- Extra creatures and glowing embers travel calmly from left to right. -->
+            <g class="halloween-flight-bat flight-bat-a" transform="translate(150 77) scale(.72)"><use href="#batShape"/></g>
+            <g class="halloween-flight-bat flight-bat-b" transform="translate(530 226) scale(.56)"><use href="#batShape"/></g>
+            <g class="halloween-flight-bat flight-bat-c" transform="translate(810 109) scale(.88)"><use href="#batShape"/></g>
+            <g class="halloween-ghost ghost-flight ghost-a" transform="translate(135 207) scale(.78)"><use href="#ghostShape"/></g>
+            <g class="halloween-ghost ghost-flight ghost-b" transform="translate(475 164) scale(.62)"><use href="#ghostShape"/></g>
+            <g class="halloween-ghost ghost-flight ghost-c" transform="translate(895 218) scale(.86)"><use href="#ghostShape"/></g>
+            <g class="halloween-ember-flight ember-a" transform="translate(10 232)"><path d="M-18 3Q-6 -2 0 0" fill="none" stroke="#ff792b" stroke-width="2" stroke-linecap="round"/><circle r="2.4" fill="#ffc06a"/><circle cx="-12" cy="-8" r="1.35" fill="#ff5d27"/></g>
+            <g class="halloween-ember-flight ember-b" transform="translate(40 184)"><path d="M-16 2Q-5 -3 0 0" fill="none" stroke="#ff6c27" stroke-width="1.6" stroke-linecap="round"/><circle r="1.8" fill="#ffe0a1"/><circle cx="-9" cy="8" r="1.2" fill="#ff572a"/></g>
+            <g class="halloween-ember-flight ember-c" transform="translate(95 258)"><path d="M-20 3Q-7 -2 0 0" fill="none" stroke="#ff792b" stroke-width="1.8" stroke-linecap="round"/><circle r="2.1" fill="#ffc06a"/></g>
+            <g class="halloween-ember-flight ember-d" transform="translate(160 143)"><path d="M-14 2Q-4 -3 0 0" fill="none" stroke="#ff6c27" stroke-width="1.5" stroke-linecap="round"/><circle r="1.65" fill="#ffb65c"/></g>
+            <g fill="#ff8834" opacity=".72"><circle cx="235" cy="120" r="2"/><circle cx="322" cy="176" r="1.7"/><circle cx="900" cy="118" r="2"/><circle cx="1060" cy="196" r="1.5"/><circle cx="398" cy="94" r="1.5"/></g>
+            <!-- Illustrated ritual scene with animated candle flames and four watching eyes. -->
+            <defs>
+              <mask id="ritualPentagramMask" maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="300">
+                <rect x="0" y="0" width="1200" height="300" fill="#fff"/>
+                <!-- Keep the animated pentagram glow behind the opaque pumpkin. -->
+                <path d="M600 50 C548 53 502 79 484 112 C465 145 473 187 503 207 C530 225 565 237 600 237 C635 237 670 225 697 207 C727 187 735 145 716 112 C698 79 652 53 600 50 Z" fill="#000"/>
+                <!-- Flame and candle cut-outs follow the five illustrated candles. -->
+                <ellipse cx="458" cy="91" rx="18" ry="24" fill="#000"/>
+                <ellipse cx="716" cy="91" rx="18" ry="24" fill="#000"/>
+                <ellipse cx="395" cy="155" rx="20" ry="27" fill="#000"/>
+                <ellipse cx="790" cy="155" rx="20" ry="27" fill="#000"/>
+                <ellipse cx="585" cy="193" rx="19" ry="25" fill="#000"/>
+              </mask>
+            </defs>
+            <!-- Clean, cel-shaded artwork follows the flat illustrated style of the Christmas scene. -->
+            <image class="halloween-ritual-image" href="assets/halloween-ritual.png" x="250" y="34" width="700" height="233" preserveAspectRatio="none"/>
+            <g class="ritual-pentagram-overlay" pointer-events="none" mask="url(#ritualPentagramMask)" fill="none">
+              <ellipse class="ritual-pentagram-halo" cx="600" cy="181" rx="263" ry="72"/>
+              <path class="ritual-pentagram-halo" d="M600 115 L735 229 L365 158 L835 158 L465 229 Z"/>
+              <ellipse class="ritual-pentagram-line" cx="600" cy="181" rx="263" ry="72"/>
+              <path class="ritual-pentagram-line" d="M600 115 L735 229 L365 158 L835 158 L465 229 Z"/>
+            </g>
+            <!-- Two normally aligned eyes and two additional eyes rotated by 120 degrees. -->
+            <g class="haunted-side-eye eye-side-left eye-normal" transform="translate(285 151)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="43" ry="25" fill="url(#hauntedSideEyeAura)"/>
+              <path d="M34 0 Q10 -22 -32 -5 Q-15 18 34 0Z" fill="#070207" stroke="#ff343b" stroke-width="2.2"/>
+              <path d="M-29 -5 Q1 -24 31 -1" fill="none" stroke="#ff6b4b" stroke-width="2.2" stroke-linecap="round"/>
+              <ellipse class="haunted-eye-iris" cx="5" cy="0" rx="10" ry="10" fill="#d51b25" stroke="#ff6d48" stroke-width="1.4"/>
+              <ellipse cx="7" cy="0" rx="3.2" ry="8" fill="#ff9b2e"/>
+              <circle cx="7" cy="0" r="1.8" fill="#fff2ba"/>
+              <path d="M-30 4 Q0 23 31 4" fill="none" stroke="#6d101d" stroke-width="1.2"/>
+            </g>
+            <g class="haunted-side-eye eye-side-right eye-normal" transform="translate(915 151) scale(-1 1)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="43" ry="25" fill="url(#hauntedSideEyeAura)"/>
+              <path d="M34 0 Q10 -22 -32 -5 Q-15 18 34 0Z" fill="#070207" stroke="#ff343b" stroke-width="2.2"/>
+              <path d="M-29 -5 Q1 -24 31 -1" fill="none" stroke="#ff6b4b" stroke-width="2.2" stroke-linecap="round"/>
+              <ellipse class="haunted-eye-iris" cx="5" cy="0" rx="10" ry="10" fill="#d51b25" stroke="#ff6d48" stroke-width="1.4"/>
+              <ellipse cx="7" cy="0" rx="3.2" ry="8" fill="#ff9b2e"/>
+              <circle cx="7" cy="0" r="1.8" fill="#fff2ba"/>
+              <path d="M-30 4 Q0 23 31 4" fill="none" stroke="#6d101d" stroke-width="1.2"/>
+            </g>
+            <g class="haunted-side-eye eye-side-angled-left eye-angle-120" transform="translate(230 204) rotate(-120) scale(.72)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="43" ry="25" fill="url(#hauntedSideEyeAura)"/>
+              <path d="M34 0 Q10 -22 -32 -5 Q-15 18 34 0Z" fill="#070207" stroke="#ff343b" stroke-width="2.2"/>
+              <path d="M-29 -5 Q1 -24 31 -1" fill="none" stroke="#ff6b4b" stroke-width="2.2" stroke-linecap="round"/>
+              <ellipse class="haunted-eye-iris" cx="5" cy="0" rx="10" ry="10" fill="#d51b25" stroke="#ff6d48" stroke-width="1.4"/>
+              <ellipse cx="7" cy="0" rx="3.2" ry="8" fill="#ff9b2e"/>
+              <circle cx="7" cy="0" r="1.8" fill="#fff2ba"/>
+              <path d="M-30 4 Q0 23 31 4" fill="none" stroke="#6d101d" stroke-width="1.2"/>
+            </g>
+            <g class="haunted-side-eye eye-side-angled-right eye-angle-120" transform="translate(970 204) rotate(120) scale(.72)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="43" ry="25" fill="url(#hauntedSideEyeAura)"/>
+              <path d="M34 0 Q10 -22 -32 -5 Q-15 18 34 0Z" fill="#070207" stroke="#ff343b" stroke-width="2.2"/>
+              <path d="M-29 -5 Q1 -24 31 -1" fill="none" stroke="#ff6b4b" stroke-width="2.2" stroke-linecap="round"/>
+              <ellipse class="haunted-eye-iris" cx="5" cy="0" rx="10" ry="10" fill="#d51b25" stroke="#ff6d48" stroke-width="1.4"/>
+              <ellipse cx="7" cy="0" rx="3.2" ry="8" fill="#ff9b2e"/>
+              <circle cx="7" cy="0" r="1.8" fill="#fff2ba"/>
+              <path d="M-30 4 Q0 23 31 4" fill="none" stroke="#6d101d" stroke-width="1.2"/>
+            </g>
+            <!-- Animated flame overlays and gentle warm halos match the five drawn candles. -->
+            <g class="ritual-candle-lights" pointer-events="none">
+              <ellipse class="ritual-flame-glow glow-a" cx="458" cy="89" rx="15" ry="25" fill="url(#candleHalo)"/>
+              <ellipse class="ritual-flame-glow glow-b" cx="716" cy="89" rx="15" ry="25" fill="url(#candleHalo)"/>
+              <ellipse class="ritual-flame-glow glow-c" cx="395" cy="153" rx="16" ry="26" fill="url(#candleHalo)"/>
+              <ellipse class="ritual-flame-glow glow-d" cx="790" cy="153" rx="16" ry="26" fill="url(#candleHalo)"/>
+              <ellipse class="ritual-flame-glow glow-e" cx="585" cy="191" rx="16" ry="27" fill="url(#candleHalo)"/>
+              <g transform="translate(455 72)"><path class="ritual-flame-overlay flame-a" d="M0 21C-6 15 -4 7 -1 2C1 7 4 10 3 14C7 8 6 2 4 -4C12 5 10 15 4 21C2 23 0 22 0 21Z" fill="url(#candleFlameFill)" filter="url(#halloweenGlow)"/></g>
+              <g transform="translate(713 72)"><path class="ritual-flame-overlay flame-b" d="M0 21C-6 15 -4 7 -1 2C1 7 4 10 3 14C7 8 6 2 4 -4C12 5 10 15 4 21C2 23 0 22 0 21Z" fill="url(#candleFlameFill)" filter="url(#halloweenGlow)"/></g>
+              <g transform="translate(392 136)"><path class="ritual-flame-overlay flame-c" d="M0 21C-6 15 -4 7 -1 2C1 7 4 10 3 14C7 8 6 2 4 -4C12 5 10 15 4 21C2 23 0 22 0 21Z" fill="url(#candleFlameFill)" filter="url(#halloweenGlow)"/></g>
+              <g transform="translate(787 136)"><path class="ritual-flame-overlay flame-d" d="M0 21C-6 15 -4 7 -1 2C1 7 4 10 3 14C7 8 6 2 4 -4C12 5 10 15 4 21C2 23 0 22 0 21Z" fill="url(#candleFlameFill)" filter="url(#halloweenGlow)"/></g>
+              <g transform="translate(582 174)"><path class="ritual-flame-overlay flame-e" d="M0 21C-6 15 -4 7 -1 2C1 7 4 10 3 14C7 8 6 2 4 -4C12 5 10 15 4 21C2 23 0 22 0 21Z" fill="url(#candleFlameFill)" filter="url(#halloweenGlow)"/></g>
+            </g>
+
+          </svg>
+          <!-- Fixed-aspect Halloween center stage: artwork never stretches when the app is maximized. -->
+          <svg class="halloween-center-stage" viewBox="0 0 2172 724" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+            <defs>
+              <radialGradient id="centerCandleAura"><stop offset="0" stop-color="#fff0aa" stop-opacity=".78"/><stop offset=".38" stop-color="#ff8a27" stop-opacity=".42"/><stop offset="1" stop-color="#ff321f" stop-opacity="0"/></radialGradient>
+              <radialGradient id="centerCandleShadow"><stop offset="0" stop-color="#ff3c25" stop-opacity=".35"/><stop offset="1" stop-color="#ff321f" stop-opacity="0"/></radialGradient>
+              <linearGradient id="centerFlameFill" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff3519"/><stop offset=".48" stop-color="#ff9b27"/><stop offset=".82" stop-color="#ffe27a"/><stop offset="1" stop-color="#fffbd9"/></linearGradient>
+              <filter id="centerCandleGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <radialGradient id="centerSideEyeAura"><stop offset="0" stop-color="#ff302f" stop-opacity=".8"/><stop offset=".45" stop-color="#ff1d37" stop-opacity=".36"/><stop offset="1" stop-color="#ff1428" stop-opacity="0"/></radialGradient>
+              <g id="centerHauntedEyeArt">
+                <path d="M44 0Q13 -28 -42 -6Q-21 22 44 0Z" fill="#070207" stroke="#ff343b" stroke-width="2.8"/>
+                <path d="M-38 -5Q0 -28 40 -1" fill="none" stroke="#ff6b4b" stroke-width="2.4" stroke-linecap="round"/>
+                <path d="M-37 4Q0 25 40 4" fill="none" stroke="#6d101d" stroke-width="1.6"/>
+              </g>
+              <path id="centerEyeClosedShape" d="M-46 0Q0 -25 46 0Q0 25 -46 0Z"/>
+            </defs>
+
+            <!-- Dim skull background; its details stay behind the penta and pumpkin. -->
+            <g class="halloween-skull-backdrop" transform="translate(1086 302) scale(1.55 1.23)" pointer-events="none">
+              <ellipse class="skull-aura" cx="0" cy="-22" rx="445" ry="285" fill="url(#centerSideEyeAura)" opacity=".38"/>
+              <path class="skull-cranium" d="M0 -238C-145 -238-247 -169-264 -53C-277 38-240 101-181 144L-158 214Q-153 235-126 231L-79 215L-40 240L0 219L40 240L79 215L126 231Q153 235 158 214L181 144C240 101 277 38 264-53C247-169 145-238 0-238Z" fill="#17090f" fill-opacity=".94" stroke="#7d1725" stroke-width="8"/>
+              <path d="M-209 -100Q-188 -189-92 -208M209 -100Q188 -189 92 -208" fill="none" stroke="#ad2530" stroke-width="7" stroke-linecap="round" opacity=".58"/>
+              <path d="M-208 -41Q-165 -99-100 -88Q-55 -77-49 -23Q-49 31-104 42Q-171 45-208 -3Z" fill="#030207" stroke="#64111f" stroke-width="8"/>
+              <path d="M208 -41Q165 -99 100 -88Q55 -77 49 -23Q49 31 104 42Q171 45 208 -3Z" fill="#030207" stroke="#64111f" stroke-width="8"/>
+              <path d="M-29 15L0 -32L29 15L0 42Z" fill="#050207" stroke="#60101d" stroke-width="5"/>
+              <path d="M-150 90Q-94 114-45 103L0 119L45 103Q94 114 150 90L135 176L91 199L48 184L0 202L-48 184L-91 199L-135 176Z" fill="#08050a" stroke="#65111e" stroke-width="7"/>
+              <path d="M-119 112L-116 179M-82 111L-80 188M-43 112L-42 184M0 119V193M43 112L42 184M82 111L80 188M119 112L116 179" stroke="#8d1c29" stroke-width="5" opacity=".84"/>
+              <path d="M-247 8L-216 34L-231 69M247 8L216 34L231 69M-95 -212L-71 -178L-91 -151M95 -212L71 -178L91 -151" fill="none" stroke="#a52632" stroke-width="5" stroke-linecap="round" opacity=".66"/>
+              <path d="M-178 134L-145 152L-151 177M178 134L145 152L151 177" fill="none" stroke="#ba2733" stroke-width="5" opacity=".52"/>
+            </g>
+
+            <!-- The pentagram is separate from the pumpkin and glows beneath it. -->
+            <g class="ritual-pentagram-backdrop" pointer-events="none" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse class="pentagram-halo" cx="1086" cy="445" rx="538" ry="190" stroke="#ff182f" stroke-width="13" stroke-opacity=".24"/>
+              <ellipse class="pentagram-ring" cx="1086" cy="445" rx="510" ry="174" stroke="#ef2638" stroke-width="4" stroke-opacity=".82"/>
+              <ellipse class="pentagram-ring inner-ring" cx="1086" cy="445" rx="455" ry="148" stroke="#ef2638" stroke-width="2.2" stroke-opacity=".55"/>
+              <path class="pentagram-halo" d="M1086 256L1264 557L748 371L1424 371L908 557Z" stroke="#ff182f" stroke-width="13" stroke-opacity=".24"/>
+              <path class="pentagram-star" d="M1086 256L1264 557L748 371L1424 371L908 557Z" stroke="#ff2938" stroke-width="5" stroke-opacity=".86" stroke-dasharray="18 9"/>
+              <path class="pentagram-etch" d="M1086 267L1096 292M1086 267L1076 292M1284 537L1260 541M1284 537L1271 520M760 389L786 381M760 389L769 407M1408 389L1382 381M1408 389L1399 407M908 540L927 524M908 540L933 547" stroke="#ff563c" stroke-width="3" stroke-opacity=".65"/>
+            </g>
+
+            <!-- Pumpkin is isolated in its own group so it can float over the pentagram. -->
+            <g class="pumpkin-levitation-group" pointer-events="none">
+              <image class="halloween-center-art" href="assets/halloween-ritual-stage.png" x="0" y="0" width="2172" height="724" preserveAspectRatio="xMidYMid meet"/>
+            </g><!-- /pumpkin-levitation-group -->
+
+            <!-- Four watching eyes: two horizontal and two rotated by 120 degrees. -->
+            <g class="haunted-side-eye eye-normal center-eye-left" transform="translate(145 360) scale(1.16)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="54" ry="31" fill="url(#centerSideEyeAura)"/>
+              <use href="#centerHauntedEyeArt"/><g class="haunted-eye-pupil" aria-hidden="true"><ellipse cx="5" cy="0" rx="11" ry="11" fill="#d51b25" stroke="#ff6d48" stroke-width="1.8"/><ellipse cx="7" cy="0" rx="3.3" ry="8.8" fill="#ff9b2e"/><circle cx="7" cy="0" r="2" fill="#fff2ba"/></g>
+              <use href="#centerEyeClosedShape" class="haunted-eye-lid" opacity="0" fill="#100409" stroke="#ff343b" stroke-width="2.8"/>
+            </g>
+            <g class="haunted-side-eye eye-normal eye-side-right center-eye-right" transform="translate(2027 360) scale(-1.16 1.16)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="54" ry="31" fill="url(#centerSideEyeAura)"/>
+              <use href="#centerHauntedEyeArt"/><g class="haunted-eye-pupil" aria-hidden="true"><ellipse cx="5" cy="0" rx="11" ry="11" fill="#d51b25" stroke="#ff6d48" stroke-width="1.8"/><ellipse cx="7" cy="0" rx="3.3" ry="8.8" fill="#ff9b2e"/><circle cx="7" cy="0" r="2" fill="#fff2ba"/></g>
+              <use href="#centerEyeClosedShape" class="haunted-eye-lid" opacity="0" fill="#100409" stroke="#ff343b" stroke-width="2.8"/>
+            </g>
+            <g class="haunted-side-eye eye-angle-120 eye-side-angled-left center-eye-angle-left" transform="translate(370 475) rotate(-120) scale(.88)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="52" ry="30" fill="url(#centerSideEyeAura)"/>
+              <use href="#centerHauntedEyeArt"/><g class="haunted-eye-pupil" aria-hidden="true"><ellipse cx="5" cy="0" rx="11" ry="11" fill="#d51b25" stroke="#ff6d48" stroke-width="1.8"/><ellipse cx="7" cy="0" rx="3.3" ry="8.8" fill="#ff9b2e"/><circle cx="7" cy="0" r="2" fill="#fff2ba"/></g>
+              <use href="#centerEyeClosedShape" class="haunted-eye-lid" opacity="0" fill="#100409" stroke="#ff343b" stroke-width="2.8"/>
+            </g>
+            <g class="haunted-side-eye eye-angle-120 eye-side-angled-right center-eye-angle-right" transform="translate(1802 475) rotate(120) scale(.88)" pointer-events="none">
+              <ellipse class="haunted-eye-aura" cx="0" cy="0" rx="52" ry="30" fill="url(#centerSideEyeAura)"/>
+              <use href="#centerHauntedEyeArt"/><g class="haunted-eye-pupil" aria-hidden="true"><ellipse cx="5" cy="0" rx="11" ry="11" fill="#d51b25" stroke="#ff6d48" stroke-width="1.8"/><ellipse cx="7" cy="0" rx="3.3" ry="8.8" fill="#ff9b2e"/><circle cx="7" cy="0" r="2" fill="#fff2ba"/></g>
+              <use href="#centerEyeClosedShape" class="haunted-eye-lid" opacity="0" fill="#100409" stroke="#ff343b" stroke-width="2.8"/>
+            </g>
+
+            <!-- Stationary shadows make the levitation of each candle readable. -->
+            <g class="ritual-candle-shadows" pointer-events="none">
+              <ellipse class="ritual-candle-shadow shadow-a" cx="526" cy="313" rx="58" ry="14" fill="url(#centerCandleShadow)"/>
+              <ellipse class="ritual-candle-shadow shadow-b" cx="1646" cy="313" rx="58" ry="14" fill="url(#centerCandleShadow)"/>
+              <ellipse class="ritual-candle-shadow shadow-c" cx="304" cy="445" rx="63" ry="15" fill="url(#centerCandleShadow)"/>
+              <ellipse class="ritual-candle-shadow shadow-d" cx="1866" cy="445" rx="63" ry="15" fill="url(#centerCandleShadow)"/>
+              <ellipse class="ritual-candle-shadow shadow-e" cx="1086" cy="615" rx="72" ry="17" fill="url(#centerCandleShadow)"/>
+            </g>
+
+            <!-- Each candle body floats independently; flame and light are separate animated layers. -->
+            <g class="candle-anchor" transform="translate(468 205)"><g class="ritual-floating-candle candle-float-a">
+              <image href="assets/halloween-candle.png" x="0" y="0" width="116" height="108" preserveAspectRatio="xMidYMid meet"/>
+              <ellipse class="floating-candle-glow glow-a" cx="58" cy="11" rx="40" ry="49" fill="url(#centerCandleAura)"/>
+              <g transform="translate(58 12)"><g class="ritual-floating-flame flame-a"><path d="M0 10C-8 3 -5 -7 -1 -16C1 -9 5 -7 4 -1C11 -12 8 -24 5 -31C20 -17 17 1 7 10C4 13 1 13 0 10Z" fill="url(#centerFlameFill)" filter="url(#centerCandleGlow)"/><path d="M1 7Q-2 0 2 -10Q7 -1 5 6Z" fill="#fff2b4" opacity=".86"/></g></g>
+            </g></g>
+            <g class="candle-anchor" transform="translate(1588 205)"><g class="ritual-floating-candle candle-float-b">
+              <image href="assets/halloween-candle.png" x="0" y="0" width="116" height="108" preserveAspectRatio="xMidYMid meet"/>
+              <ellipse class="floating-candle-glow glow-b" cx="58" cy="11" rx="40" ry="49" fill="url(#centerCandleAura)"/>
+              <g transform="translate(58 12)"><g class="ritual-floating-flame flame-b"><path d="M0 10C-8 3 -5 -7 -1 -16C1 -9 5 -7 4 -1C11 -12 8 -24 5 -31C20 -17 17 1 7 10C4 13 1 13 0 10Z" fill="url(#centerFlameFill)" filter="url(#centerCandleGlow)"/><path d="M1 7Q-2 0 2 -10Q7 -1 5 6Z" fill="#fff2b4" opacity=".86"/></g></g>
+            </g></g>
+            <g class="candle-anchor" transform="translate(246 336)"><g class="ritual-floating-candle candle-float-c">
+              <image href="assets/halloween-candle.png" x="0" y="0" width="126" height="118" preserveAspectRatio="xMidYMid meet"/>
+              <ellipse class="floating-candle-glow glow-c" cx="63" cy="12" rx="43" ry="54" fill="url(#centerCandleAura)"/>
+              <g transform="translate(63 13)"><g class="ritual-floating-flame flame-c"><path d="M0 10C-8 3 -5 -7 -1 -16C1 -9 5 -7 4 -1C11 -12 8 -24 5 -31C20 -17 17 1 7 10C4 13 1 13 0 10Z" fill="url(#centerFlameFill)" filter="url(#centerCandleGlow)"/><path d="M1 7Q-2 0 2 -10Q7 -1 5 6Z" fill="#fff2b4" opacity=".86"/></g></g>
+            </g></g>
+            <g class="candle-anchor" transform="translate(1803 336)"><g class="ritual-floating-candle candle-float-d">
+              <image href="assets/halloween-candle.png" x="0" y="0" width="126" height="118" preserveAspectRatio="xMidYMid meet"/>
+              <ellipse class="floating-candle-glow glow-d" cx="63" cy="12" rx="43" ry="54" fill="url(#centerCandleAura)"/>
+              <g transform="translate(63 13)"><g class="ritual-floating-flame flame-d"><path d="M0 10C-8 3 -5 -7 -1 -16C1 -9 5 -7 4 -1C11 -12 8 -24 5 -31C20 -17 17 1 7 10C4 13 1 13 0 10Z" fill="url(#centerFlameFill)" filter="url(#centerCandleGlow)"/><path d="M1 7Q-2 0 2 -10Q7 -1 5 6Z" fill="#fff2b4" opacity=".86"/></g></g>
+            </g></g>
+            <g class="candle-anchor" transform="translate(1028 506)"><g class="ritual-floating-candle candle-float-e">
+              <image href="assets/halloween-candle.png" x="0" y="0" width="140" height="130" preserveAspectRatio="xMidYMid meet"/>
+              <ellipse class="floating-candle-glow glow-e" cx="70" cy="14" rx="48" ry="58" fill="url(#centerCandleAura)"/>
+              <g transform="translate(70 15)"><g class="ritual-floating-flame flame-e"><path d="M0 10C-8 3 -5 -7 -1 -16C1 -9 5 -7 4 -1C11 -12 8 -24 5 -31C20 -17 17 1 7 10C4 13 1 13 0 10Z" fill="url(#centerFlameFill)" filter="url(#centerCandleGlow)"/><path d="M1 7Q-2 0 2 -10Q7 -1 5 6Z" fill="#fff2b4" opacity=".86"/></g></g>
+            </g></g>
+          </svg>
+          <svg class="seasonal-art christmas-art" viewBox="0 0 1200 300" preserveAspectRatio="none" focusable="false">
+            <defs>
+              <linearGradient id="fireplaceStone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b8f9c"/><stop offset=".45" stop-color="#454754"/><stop offset="1" stop-color="#151a27"/></linearGradient>
+              <linearGradient id="fireGlow" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#ff311d"/><stop offset=".55" stop-color="#ff8a24"/><stop offset="1" stop-color="#fff0a0" stop-opacity=".7"/></linearGradient>
+              <radialGradient id="fireHalo" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="#fff1a1" stop-opacity=".64"/><stop offset=".38" stop-color="#ff8c2a" stop-opacity=".38"/><stop offset=".72" stop-color="#ff4a20" stop-opacity=".14"/><stop offset="1" stop-color="#ff311d" stop-opacity="0"/></radialGradient>
+              <linearGradient id="treeGreen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f9d67"/><stop offset=".55" stop-color="#075235"/><stop offset="1" stop-color="#032b24"/></linearGradient>
+              <g id="snowflake" stroke="#e7f7ff" stroke-width="1.4" stroke-linecap="round" fill="none"><path d="M0 -6V6M-5.2 -3L5.2 3M-5.2 3L5.2 -3M0 -6L-1.7 -4M0 -6L1.7 -4M0 6L-1.7 4M0 6L1.7 4"/></g>
+            </defs>
+            <g class="winter-ice winter-ice-left" fill="none" stroke="#aee8ff" stroke-opacity=".45" stroke-width="1.8"><path d="M0 0L28 31 19 60 44 83 36 113 60 141 51 168 73 195 66 226 86 260 80 300M0 35L19 31M19 60L0 71M44 83L16 93M36 113L9 122M60 141L28 151M51 168L22 180M73 195L41 208M66 226L35 236M86 260L51 274M1200 0L1172 31 1181 60 1156 83 1164 113 1140 141 1149 168 1127 195 1134 226 1114 260 1120 300M1200 35L1181 31M1181 60L1200 71M1156 83L1184 93M1164 113L1191 122M1140 141L1172 151M1149 168L1178 180M1127 195L1159 208M1134 226L1165 236M1114 260L1149 274"/></g>
+            <g class="christmas-garland" fill="none" stroke-linecap="round"><path d="M0 19C170 84 272 -3 420 31S705 77 860 31 1070 6 1200 22" stroke="#1e774c" stroke-width="12" stroke-opacity=".35"/><path d="M0 19C170 84 272 -3 420 31S705 77 860 31 1070 6 1200 22" stroke="#d6b468" stroke-width="2.5" stroke-dasharray="2 6"/></g>
+            <g class="garland-lights"><circle cx="96" cy="48" r="5" fill="#ff424b"/><circle cx="215" cy="55" r="4" fill="#f3d58b"/><circle cx="340" cy="21" r="5" fill="#70e2ac"/><circle cx="465" cy="42" r="4.5" fill="#ff424b"/><circle cx="615" cy="63" r="5" fill="#f3d58b"/><circle cx="768" cy="51" r="4" fill="#7bd8ff"/><circle cx="900" cy="24" r="5" fill="#ff424b"/><circle cx="1040" cy="17" r="4" fill="#f3d58b"/><circle cx="1140" cy="21" r="5" fill="#7be0ac"/></g>
+            <g class="christmas-fireplace" transform="translate(573 126)">
+              <ellipse class="fireplace-glow" cx="88" cy="136" rx="94" ry="21" fill="#ff8125" opacity=".10"/>
+              <path d="M8 14L26 0H153L171 14V154H8Z" fill="url(#fireplaceStone)" stroke="#b9ced8" stroke-opacity=".55" stroke-width="2"/>
+              <path d="M0 14H179V32H0Z" fill="#aab8c5" stroke="#d4e5ee" stroke-opacity=".55"/>
+              <path d="M31 38H148V137H31Z" fill="#080b12" stroke="#d5e4ed" stroke-opacity=".5" stroke-width="2"/>
+              <ellipse class="fireplace-inner-glow" cx="89" cy="112" rx="53" ry="30" fill="url(#fireHalo)" opacity=".42"/>
+              <path class="fire-flame flame-left" d="M48 126Q37 108 53 83Q51 103 66 107Q81 81 76 62Q96 86 87 103Q102 95 110 114Q114 124 106 129Z" fill="url(#fireGlow)" opacity=".7"/>
+              <path class="fire-flame flame-main" d="M48 125Q42 88 67 67Q62 97 82 103Q78 65 102 49Q99 84 122 94Q130 107 120 125Z" fill="url(#fireGlow)"/>
+              <path class="fire-flame flame-right" d="M80 127Q73 108 88 91Q84 111 97 115Q109 102 112 88Q124 111 116 126Z" fill="url(#fireGlow)" opacity=".76"/>
+              <path class="fire-core" d="M69 127Q66 103 84 87Q82 110 98 117Q96 101 109 91Q118 115 106 127Z" fill="#fff0a0" opacity=".9"/>
+              <g class="fire-sparks" fill="#ffe6a1">
+                <circle class="fire-spark spark-a" cx="54" cy="112" r="1.7"/>
+                <circle class="fire-spark spark-b" cx="117" cy="116" r="1.3"/>
+                <circle class="fire-spark spark-c" cx="76" cy="102" r="1.25"/>
+                <circle class="fire-spark spark-d" cx="101" cy="107" r="1.5"/>
+              </g>
+              <path d="M57 129L118 129" stroke="#39201b" stroke-width="9" stroke-linecap="round"/>
+              <path d="M12 52H27M12 83H27M12 114H27M152 52H167M152 83H167M152 114H167" stroke="#d2dce4" stroke-opacity=".48" stroke-width="2"/>
+            </g>
+            <g class="christmas-tree" transform="translate(440 87) scale(.82)">
+              <path d="M66 0L51 34 62 34 37 73 48 73 17 116 42 116 9 158H121L89 116H114L83 73H95L71 34H81Z" fill="url(#treeGreen)" stroke="#3db780" stroke-opacity=".72" stroke-width="2"/>
+              <path class="tree-branch-sheen" d="M66 5L55 30 66 30 42 69 53 69 24 111 46 111 17 153M70 15L77 31 69 31 91 69 81 69 109 111 88 111 116 153" fill="none" stroke="#76e0b2" stroke-opacity=".42" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              <path class="tree-snow" d="M56 29Q66 34 77 29M42 68Q65 77 89 68M25 111Q66 125 105 111M17 153Q66 169 114 153" fill="none" stroke="#e7f8ff" stroke-opacity=".72" stroke-width="3.3" stroke-linecap="round"/>
+              <path d="M66 0L66 179" stroke="#addfc6" stroke-opacity=".25" stroke-width="1.5"/>
+              <path class="tree-star" d="M66 -6L70 3 80 4 73 11 75 21 66 16 57 21 59 11 52 4 62 3Z" fill="#f1d78a" stroke="#fff0ba" stroke-width="1.2"/>
+              <path d="M28 122Q64 139 102 122M39 89Q65 105 91 89M53 54Q65 63 78 54" fill="none" stroke="#d9ba68" stroke-width="2.4"/>
+              <path class="tree-garland" d="M50 42Q67 53 81 43M39 78Q67 95 93 78M27 119Q66 139 104 119M20 151Q66 169 110 151" fill="none" stroke="#e8c76b" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="2 4"/>
+              <g class="tree-ornaments"><circle cx="42" cy="74" r="5" fill="#ff3747" stroke="#ffc0c7" stroke-width="1"/><circle cx="81" cy="90" r="5" fill="#e8c76b" stroke="#fff0b9" stroke-width="1"/><circle cx="54" cy="111" r="5" fill="#65d3ff" stroke="#c6f3ff" stroke-width="1"/><circle cx="89" cy="132" r="5.5" fill="#ff3747" stroke="#ffc0c7" stroke-width="1"/><circle cx="43" cy="143" r="4.5" fill="#e8c76b" stroke="#fff0b9" stroke-width="1"/><circle cx="76" cy="57" r="3.8" fill="#ff3747"/><circle cx="67" cy="43" r="3.6" fill="#65d3ff" stroke="#c6f3ff" stroke-width=".8"/><circle cx="51" cy="88" r="3.6" fill="#ffcf72" stroke="#fff0b9" stroke-width=".8"/><circle cx="78" cy="105" r="4.2" fill="#ff3747" stroke="#ffc0c7" stroke-width=".8"/><circle cx="62" cy="130" r="3.7" fill="#65d3ff" stroke="#c6f3ff" stroke-width=".8"/><circle cx="91" cy="151" r="3.5" fill="#ffcf72" stroke="#fff0b9" stroke-width=".8"/></g>
+              <path d="M66 179V196M48 196H84" stroke="#8b5937" stroke-width="9" stroke-linecap="round"/>
+            </g>
+            <g class="winter-snowfall"><use href="#snowflake" x="64" y="73" class="snowflake snowflake-01"/><use href="#snowflake" x="132" y="156" class="snowflake snowflake-02"/><use href="#snowflake" x="190" y="105" class="snowflake snowflake-03"/><use href="#snowflake" x="273" y="230" class="snowflake snowflake-04"/><use href="#snowflake" x="347" y="92" class="snowflake snowflake-05"/><use href="#snowflake" x="407" y="189" class="snowflake snowflake-06"/><use href="#snowflake" x="558" y="66" class="snowflake snowflake-07"/><use href="#snowflake" x="630" y="231" class="snowflake snowflake-08"/><use href="#snowflake" x="702" y="113" class="snowflake snowflake-09"/><use href="#snowflake" x="755" y="202" class="snowflake snowflake-10"/><use href="#snowflake" x="841" y="80" class="snowflake snowflake-11"/><use href="#snowflake" x="902" y="163" class="snowflake snowflake-12"/><use href="#snowflake" x="1015" y="112" class="snowflake snowflake-13"/><use href="#snowflake" x="1080" y="220" class="snowflake snowflake-14"/><use href="#snowflake" x="1156" y="86" class="snowflake snowflake-15"/><use href="#snowflake" x="116" y="262" class="snowflake snowflake-16"/><use href="#snowflake" x="319" y="35" class="snowflake snowflake-17"/><use href="#snowflake" x="519" y="273" class="snowflake snowflake-18"/><use href="#snowflake" x="800" y="32" class="snowflake snowflake-19"/><use href="#snowflake" x="1095" y="46" class="snowflake snowflake-20"/><use href="#snowflake" x="235" y="42" class="snowflake snowflake-21"/><use href="#snowflake" x="475" y="142" class="snowflake snowflake-22"/><use href="#snowflake" x="585" y="176" class="snowflake snowflake-23"/><use href="#snowflake" x="668" y="44" class="snowflake snowflake-24"/><use href="#snowflake" x="780" y="263" class="snowflake snowflake-25"/><use href="#snowflake" x="955" y="54" class="snowflake snowflake-26"/><use href="#snowflake" x="1120" y="276" class="snowflake snowflake-27"/><use href="#snowflake" x="36" y="191" class="snowflake snowflake-28"/><use href="#snowflake" x="320" y="191" class="snowflake snowflake-29"/><use href="#snowflake" x="690" y="265" class="snowflake snowflake-30"/><use href="#snowflake" x="990" y="197" class="snowflake snowflake-31"/><use href="#snowflake" x="870" y="268" class="snowflake snowflake-32"/></g>
+          </svg>
+          <div class="seasonal-snowfall-overlay"></div>
+        </div>
+        <div class="hero-grid"></div>
+        <div class="hero-orbit orbit-a"></div><div class="hero-orbit orbit-b"></div>
+        <div class="hero-glow"></div>
+        <div class="hero-copy">
+          <span class="hero-tag"><span class="hero-tag-mark"></span> FOXSMUSIC ORIGINAL</span>
+          <h2>Feel the <em>dark.</em><br>Hear the <b>fire.</b></h2>
+          <p>Твоя коллекция. Твой ритм.<br>Ни одного лишнего звука.</p>
+          <button class="hero-cta" id="heroAddBtn"><span data-icon="plus"></span><span id="heroAddText">Загрузить музыку</span></button>
+        </div>
+        <div class="hero-art-wrap">
+          <div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div>
+          <div class="hero-art-aura"></div>
+          <img class="hero-art" src="assets/foxsmusic-logo.png" alt="Красно-чёрный логотип лиса FoxsMusic">
+          <button type="button" class="floating-chip chip-top hero-sound-button" id="heroSoundBtn" aria-label="Открыть настройки звука" title="Открыть звуковую студию"><span class="chip-dot"></span> SOUND ON <span class="chip-eq-mini" aria-hidden="true"><i></i><i></i><i></i></span></button>
+        </div>
+        <div class="hero-equalizer" id="heroEqualizer" aria-hidden="true"></div>
+        <div class="hero-bottom-line"><span>01 / FOXSMUSIC</span><span>RED LIGHTS · DEEP SOUND</span></div>
+      </section>
+
+      <section class="library-section">
+        <div class="section-heading">
+          <div><h2 id="listHeading">Треки библиотеки</h2><p id="listSubheading">Музыка, которая хранится у тебя</p></div>
+          <div class="list-tools"><button class="icon-btn small" id="shuffleAllBtn" title="Случайный трек" aria-label="Случайный трек"><span data-icon="shuffle"></span></button><button class="icon-btn small" id="clearSearchBtn" title="Очистить поиск" aria-label="Очистить поиск"><span data-icon="x"></span></button></div>
+        </div>
+        <div class="table-head"><span class="col-number">#</span><span class="col-title">НАЗВАНИЕ</span><span class="col-album">ДОБАВЛЕН</span><span class="col-duration"><span data-icon="clock"></span></span><span class="col-actions"></span></div>
+        <div class="track-list" id="trackList"></div>
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon"><span data-icon="audio"></span><i></i></div>
+          <h3>Твоя музыка начинается здесь</h3>
+          <p>Добавь MP3, WAV, FLAC, OGG или другой аудиофайл.<br>Треки останутся в библиотеке на этом устройстве.</p>
+          <button class="outline-button bright" id="emptyAddBtn"><span data-icon="plus"></span> Выбрать аудиофайлы</button>
+          <span class="drop-hint">или перетащи файлы в окно</span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="queue-panel">
+      <div class="queue-heading"><div><span class="eyebrow-mini">NOW PLAYING</span><h2 id="queueHeadingText">Текущий плейлист</h2></div><div class="queue-heading-actions"><span class="queue-count" id="queueCount">0 треков</span><button class="queue-clear-btn" id="clearQueueBtn" type="button" title="Очистить очередь" aria-label="Очистить очередь" disabled>×</button></div></div>
+      <div class="queue-context"><span class="queue-context-dot"></span><span id="queueContextLabel">Моя музыка</span><button id="queueShuffleBtn" title="Перемешать" aria-label="Перемешать"><span data-icon="shuffle"></span></button></div>
+      <div class="queue-list" id="queueList"></div>
+      <div class="queue-empty" id="queueEmpty"><div class="queue-empty-symbol"><span data-icon="list"></span></div><p>Здесь появятся треки<br>из твоей библиотеки</p><button id="queueAddBtn"><span id="queueAddText">Добавить музыку</span> <span data-icon="arrow-up-right"></span></button></div>
+      <div class="queue-footer"><span><span class="queue-footer-dot"></span> ЛОКАЛЬНАЯ БИБЛИОТЕКА</span><span id="queueDuration">00:00</span></div>
+    </aside>
+  </div>
+
+  <section class="sound-studio" id="soundStudio" aria-label="Звуковая студия" aria-hidden="true" hidden>
+    <div class="studio-header">
+      <div><span class="studio-kicker"><span class="live-dot"></span> FOXSMUSIC AUDIO ENGINE</span><h2>Звуковая студия<span>.</span></h2></div>
+      <button class="studio-close" id="closeSoundStudio" aria-label="Закрыть звуковую студию" title="Закрыть">×</button>
+    </div>
+    <p class="studio-intro">Настрой звучание под своё настроение. Эффекты применяются сразу.</p>
+    <div class="studio-spectrum-wrap">
+      <div class="studio-spectrum" id="soundSpectrum" aria-hidden="true"></div>
+      <div class="studio-spectrum-footer"><span>LOW <b>·</b> MID <b>·</b> HIGH</span><span id="audioEngineStatus">ГОТОВ К ЗВУКУ</span></div>
+    </div>
+    <div class="studio-presets" role="group" aria-label="Предустановки эквалайзера">
+      <button class="studio-preset active" data-preset="flat">Flat</button>
+      <button class="studio-preset" data-preset="bass">Bass+</button>
+      <button class="studio-preset" data-preset="vocal">Vocal</button>
+      <button class="studio-preset" data-preset="night">Night</button>
+    </div>
+    <div class="studio-controls">
+      <div class="studio-control speed-control">
+        <label for="speedSlider"><span><i class="control-glyph">↗</i> Скорость воспроизведения</span><output id="speedValue" for="speedSlider">1.00×</output></label>
+        <input type="range" id="speedSlider" min="0.5" max="1.5" step="0.05" value="1" aria-label="Скорость воспроизведения">
+        <div class="range-ends"><span>0.5× медленнее</span><span>1×</span><span>1.5× быстрее</span></div>
+      </div>
+      <div class="studio-control gain-control">
+        <label for="gainSlider"><span><i class="control-glyph">↯</i> Усиление звука</span><output id="gainValue" for="gainSlider">100%</output></label>
+        <input type="range" id="gainSlider" min="50" max="150" step="1" value="100" aria-label="Усиление звука">
+        <div class="range-ends"><span>50%</span><span>100%</span><span>150%</span></div>
+      </div>
+      <div class="studio-control">
+        <label for="bassSlider"><span><i class="control-glyph">▂</i> Басы</span><output id="bassValue" for="bassSlider">0 dB</output></label>
+        <input type="range" id="bassSlider" min="-12" max="12" step="1" value="0" aria-label="Уровень басов">
+        <div class="range-ends"><span>−12 dB</span><span>0</span><span>+12 dB</span></div>
+      </div>
+      <div class="studio-control">
+        <label for="midSlider"><span><i class="control-glyph">▅</i> Средние частоты</span><output id="midValue" for="midSlider">0 dB</output></label>
+        <input type="range" id="midSlider" min="-12" max="12" step="1" value="0" aria-label="Уровень средних частот">
+        <div class="range-ends"><span>−12 dB</span><span>0</span><span>+12 dB</span></div>
+      </div>
+      <div class="studio-control">
+        <label for="trebleSlider"><span><i class="control-glyph">▇</i> Высокие частоты</span><output id="trebleValue" for="trebleSlider">0 dB</output></label>
+        <input type="range" id="trebleSlider" min="-12" max="12" step="1" value="0" aria-label="Уровень высоких частот">
+        <div class="range-ends"><span>−12 dB</span><span>0</span><span>+12 dB</span></div>
+      </div>
+    </div>
+    <div class="studio-control transition-control">
+      <label for="crossfadeSlider"><span><i class="control-glyph">⇄</i> Плавный переход между треками</span><output id="crossfadeValue" for="crossfadeSlider">3 с</output></label>
+      <input type="range" id="crossfadeSlider" min="0" max="8" step="1" value="3" aria-label="Длительность плавного перехода">
+      <div class="range-ends"><span>Выкл.</span><span>4 с</span><span>8 с</span></div>
+    </div>
+    <label class="normalize-toggle-row" for="normalizeToggle"><span><strong>Выравнивание громкости</strong><small>Мягко компенсирует слишком тихие и громкие участки.</small></span><input type="checkbox" id="normalizeToggle" checked></label>
+    <div class="custom-eq-row"><button type="button" id="saveEqPresetBtn" class="studio-reset">Сохранить свой пресет</button><div id="customPresetList" class="custom-preset-list"></div></div>
+    <div class="studio-footer"><span class="studio-footnote"><span class="studio-led"></span> LIVE AUDIO PROCESSING</span><button id="resetSoundBtn" class="studio-reset">Сбросить настройки</button></div>
+  </section>
+
+  <footer class="player-bar">
+    <div class="now-playing">
+      <button class="now-cover-button" id="changeCoverBtn" title="Изменить обложку текущего трека" aria-label="Изменить обложку"><img id="nowCover" src="assets/foxsmusic-logo.png" alt="Обложка"><span data-icon="image"></span></button>
+      <div class="now-meta"><strong id="nowTitle">FoxsMusic</strong><span id="nowArtist">Выбери трек и погружайся в звук</span><span class="now-subline"><i></i><span id="nowStatus">ГОТОВ К ВОСПРОИЗВЕДЕНИЮ</span></span></div>
+      <button class="player-favorite" id="nowFavoriteBtn" title="В избранное" aria-label="В избранное"><span data-icon="heart"></span></button>
+    </div>
+
+    <div class="transport">
+      <div class="transport-buttons">
+        <button class="transport-side" id="shuffleBtn" title="Перемешивание" aria-label="Перемешивание"><span data-icon="shuffle"></span></button>
+        <button class="transport-side" id="previousBtn" title="Предыдущий трек" aria-label="Предыдущий трек"><span data-icon="previous"></span></button>
+        <button class="play-button" id="playBtn" title="Воспроизвести" aria-label="Воспроизвести"><span data-icon="play"></span></button>
+        <button class="transport-side" id="nextBtn" title="Следующий трек" aria-label="Следующий трек"><span data-icon="next"></span></button>
+        <button class="transport-side" id="repeatBtn" title="Повтор выключен" aria-label="Повтор"><span data-icon="repeat"></span><i class="repeat-state"></i></button>
+      </div>
+      <div class="progress-row"><span id="currentTime">0:00</span><input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="Позиция воспроизведения"><span id="durationText">0:00</span></div>
+    </div>
+
+    <div class="player-tools">
+      <button class="tool-icon" id="muteBtn" title="Без звука" aria-label="Без звука"><span data-icon="volume"></span></button>
+      <input type="range" id="volumeBar" min="0" max="100" value="76" aria-label="Громкость">
+      <button class="tool-icon queue-toggle" id="toggleQueueBtn" title="Показать текущий плейлист" aria-label="Показать текущий плейлист"><span data-icon="queue"></span></button>
+      <button class="tool-icon" id="settingsToggle" title="Настройки эффектов" aria-label="Настройки эффектов"><span data-icon="settings"></span></button>
+    </div>
+  </footer>
+
+  <input id="audioInput" type="file" accept="audio/*,.mp3,.wav,.flac,.ogg,.m4a,.aac,.opus,.wma" multiple hidden>
+  <input id="folderInput" type="file" accept="audio/*" webkitdirectory directory multiple hidden>
+  <input id="coverInput" type="file" accept="image/*" hidden>
+  <section class="now-playing-overlay" id="nowPlayingOverlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Сейчас играет" tabindex="-1">
+    <button type="button" id="closeNowPlaying" class="now-playing-close" aria-label="Закрыть полноэкранный режим">×</button>
+    <div class="now-playing-backdrop" id="nowPlayingBackdrop"></div>
+    <div class="now-playing-content">
+      <div class="now-playing-visual"><div class="now-playing-ring"></div><img id="nowPlayingCover" src="assets/foxsmusic-logo.png" alt="Обложка альбома"><div id="nowPlayingBars" class="now-playing-bars" aria-hidden="true"></div></div>
+      <div class="now-playing-track"><span class="eyebrow"><span class="live-dot"></span> NOW PLAYING · FOXSMUSIC</span><h2 id="nowPlayingTitle">FoxsMusic</h2><p id="nowPlayingArtist">Выбери трек, чтобы начать</p></div>
+      <div class="now-playing-transport"><button type="button" id="npPreviousBtn" class="transport-side" aria-label="Предыдущий трек"><span data-icon="previous"></span></button><button type="button" id="npPlayBtn" class="play-button" aria-label="Воспроизвести"><span data-icon="play"></span></button><button type="button" id="npNextBtn" class="transport-side" aria-label="Следующий трек"><span data-icon="next"></span></button></div>
+      <div class="now-playing-progress"><span id="npCurrentTime">0:00</span><input type="range" id="npSeekBar" min="0" max="1000" value="0" aria-label="Позиция воспроизведения"><span id="npDuration">0:00</span></div>
+    </div>
+  </section>
+  <audio id="audioElement" preload="metadata"></audio>
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <div id="modalRoot"></div>
+</body>
+</html>

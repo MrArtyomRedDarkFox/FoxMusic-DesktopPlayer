@@ -1,0 +1,9 @@
+!.env.example
+*.log
+.DS_Store
+.env
+.env.*
+Thumbs.db
+dist/
+node_modules/
+release/

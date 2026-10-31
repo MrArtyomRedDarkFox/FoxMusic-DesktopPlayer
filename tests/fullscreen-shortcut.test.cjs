@@ -1,0 +1,18 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const root = path.resolve(__dirname, '..');
+const main = fs.readFileSync(path.join(root, 'main.cjs'), 'utf8');
+const preload = fs.readFileSync(path.join(root, 'preload.cjs'), 'utf8');
+const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+const help = app.slice(app.indexOf('function openHelp()'), app.indexOf('async function changeCurrentCover'));
+assert.match(main, /webContents\.on\('before-input-event',\s*\(event, input\)\s*=>/);
+assert.match(main, /input\.type === 'keyDown' && input\.key === 'F11'/);
+assert.match(main, /event\.preventDefault\(\);[\s\S]{0,180}setFullScreen\(!mainWindow\.isFullScreen\(\)\)/);
+assert.match(main, /ipcMain\.handle\('foxsmusic:toggle-window-fullscreen'/);
+assert.match(preload, /toggleWindowFullscreen:\s*\(\)\s*=> ipcRenderer\.invoke\('foxsmusic:toggle-window-fullscreen'\)/);
+assert.match(app, /window\.foxsmusic\.toggleWindowFullscreen\(\)/);
+assert.match(app, /event\.code === 'F11' \|\| event\.key === 'F11'/);
+assert.match(help, /<kbd>F \/ F11<\/kbd>/);
+console.log('PASS: F11 native fullscreen integration checks');
