@@ -47,26 +47,38 @@ navCtx.selectAdjacent(-1);
 assert.equal(navCalls[0], order[order.indexOf('b') - 1] || order[order.length - 1], 'Previous follows the shuffled order backward and wraps at the start');
 
 const endSource = extract('  function handleTrackEnded() {', '  // Bind both audio decks.');
-function makeEndContext(mode) {
+function makeEndContext(mode, currentTrackId = 'b') {
   const calls = { played: 0, selected: 0, paused: 0, synced: 0 };
   const deck1 = { currentTime: 99, pause() { calls.paused++; }, play() { calls.played++; return Promise.resolve(); } };
   const deck2 = { pause() { calls.paused++; } };
-  const ctx = { repeatMode: mode, crossfadeGeneration: 0, ui: { audio: deck1 }, audioDecks: [deck1,deck2],
-    selectAdjacent: () => calls.selected++, syncPlaybackUI: () => calls.synced++, updateAudioEngineStatus: () => {}, updateMediaSession: () => {}, updateNowPlayingOverlay: () => {}, calls };
+  const queue = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  const ctx = {
+    repeatMode: mode, currentTrackId, crossfadeGeneration: 0,
+    ui: { audio: deck1 }, audioDecks: [deck1, deck2],
+    getPlaybackOrder: () => queue,
+    selectAdjacent: direction => { calls.selected += direction; },
+    syncPlaybackUI: () => calls.synced++, updateAudioEngineStatus: () => {},
+    updateMediaSession: () => {}, updateNowPlayingOverlay: () => {}, calls
+  };
   vm.runInNewContext(`${endSource}; this.handleTrackEnded = handleTrackEnded;`, ctx);
   return ctx;
 }
-const off = makeEndContext('off'); off.handleTrackEnded();
-assert.equal(off.calls.selected, 0, 'Repeat Off does not auto-advance at natural end');
-assert.equal(off.calls.paused, 2, 'Repeat Off stops both decks');
-assert.equal(off.ui.audio.currentTime, 0, 'Repeat Off resets current time after stopping');
-assert.equal(off.calls.synced, 1, 'Repeat Off refreshes playback UI');
-const all = makeEndContext('all'); all.handleTrackEnded();
-assert.equal(all.calls.selected, 1, 'Repeat Playlist advances to the next track');
-const one = makeEndContext('one'); one.handleTrackEnded();
+const offMiddle = makeEndContext('off', 'b');
+offMiddle.handleTrackEnded();
+assert.equal(offMiddle.calls.selected, 1, 'Repeat Off advances to the next track when the queue has one');
+assert.equal(offMiddle.calls.paused, 0, 'Repeat Off keeps playback running when another track exists');
+const offLast = makeEndContext('off', 'c');
+offLast.handleTrackEnded();
+assert.equal(offLast.calls.selected, 0, 'Repeat Off does not wrap after the final item');
+assert.equal(offLast.calls.paused, 2, 'Repeat Off stops both decks after the final item');
+assert.equal(offLast.ui.audio.currentTime, 0, 'Repeat Off resets current time after final stop');
+assert.equal(offLast.calls.synced, 1, 'Repeat Off refreshes playback UI after final stop');
+const all = makeEndContext('all', 'c');
+all.handleTrackEnded();
+assert.equal(all.calls.selected, 1, 'Repeat All wraps after the final item');
+const one = makeEndContext('one', 'b');
+one.handleTrackEnded();
 assert.equal(one.calls.played, 1, 'Repeat One restarts the current track');
 assert.equal(one.calls.selected, 0, 'Repeat One does not advance the queue');
 
-assert.match(source, /if \(repeatMode !== 'all' \|\| autoCrossfadeRunning/,
-  'automatic crossfade only runs when Repeat Playlist is enabled');
-console.log('PASS: shuffle order, previous/next traversal, and Repeat Off stop-at-end tests');
+console.log('PASS: shuffle order, previous/next traversal, Repeat Off sequential playback, Repeat All wrap, and Repeat One');

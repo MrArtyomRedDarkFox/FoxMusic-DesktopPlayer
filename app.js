@@ -1916,6 +1916,7 @@
   function setText(selector, value) { const element = $(selector); if (element) element.textContent = value; }
   function applyLocale(locale = currentLocale) {
     currentLocale = ['ru', 'en', 'de'].includes(locale) ? locale : 'ru';
+    window.foxOnline?.setLocale(currentLocale);
     captureStaticLocaleContent();
     applyStaticLocale();
     document.documentElement.lang = currentLocale;
@@ -2849,6 +2850,7 @@
     } catch (_) {}
   }
   function updateNowPlayingOverlay() {
+    if (typeof window !== 'undefined' && window.foxOnline?.renderBottomPlayer?.()) return;
     const overlay = $('#nowPlayingOverlay'); if (!overlay || overlay.hidden) return;
     const track = getCurrentTrack();
     const cover = track ? coverFor(track) : LOGO;
@@ -2883,6 +2885,8 @@
   }
 
   function renderNowPlaying() {
+    if (typeof window !== 'undefined' && window.foxOnline?.renderBottomPlayer?.()) return;
+    ui.nowFavoriteBtn.innerHTML = svgIcon('heart');
     const track = getCurrentTrack();
     if (!track) {
       ui.nowCover.removeAttribute('data-track-artwork'); ui.nowCover.src = LOGO; ui.nowTitle.textContent = 'FoxsMusic'; ui.nowArtist.textContent = tr('playerChoose');
@@ -2909,6 +2913,7 @@
     updateMediaSession(track);
   }
   function renderControls() {
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.renderBottomPlayer(); return; }
     ui.shuffleBtn.classList.toggle('active', shuffleEnabled);
     ui.repeatBtn.classList.toggle('active', repeatMode !== 'off');
     ui.repeatBtn.classList.toggle('repeat-one', repeatMode === 'one');
@@ -2939,6 +2944,7 @@
     renderNowPlaying();
     renderControls();
     applyLocale(currentLocale);
+    window.foxOnline?.syncHeading();
   }
 
   // Playback state changes should update only the affected controls/indicators.
@@ -3260,6 +3266,7 @@
       toast(track.audioPath ? tr('openFolderFailed') : tr('auditNoFilePath'), 'error'); return;
     }
 
+    window.foxOnline?.stopStream();
     const selectionChanged = currentTrackId !== track.id;
     const attachedSource = ui.audio.getAttribute('src') || '';
     const sourceChanged = attachedSource !== source;
@@ -3306,6 +3313,10 @@
     }
   }
   async function togglePlay() {
+    // The shared bottom Play button controls the active internet stream first.
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.toggleStream(); return; }
+    // Local playback takes focus from any active internet stream.
+    window.foxOnline?.stopStream();
     if (!tracks.length) { chooseAudioFiles(true); return; }
     const selectedTrack = getTrack(currentTrackId);
     if (!selectedTrack) {
@@ -3338,6 +3349,7 @@
     syncPlaybackUI();
   }
   function selectAdjacent(direction) {
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.playAdjacentStream(direction); return; }
     // Shuffle uses one stable randomized order. Next/Previous then move through
     // that order without repeating a random pick before other tracks are played.
     const queue = getPlaybackOrder();
@@ -4607,10 +4619,10 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   }
 
   function maybeStartAutoCrossfade() {
-    // Repeat Off means stop at the end of the current track; Repeat One loops
-    // the current deck. Automatic crossfade to another track is only valid in
-    // Repeat Playlist mode, where the transition will not violate the selected mode.
-    if (repeatMode !== 'all' || autoCrossfadeRunning || !audioSettings.crossfadeSeconds || ui.audio.paused || ui.audio.ended || !Number.isFinite(ui.audio.duration) || !currentTrackId) return;
+    // Crossfade into the next item in the active queue in both Repeat Off and
+    // Repeat All. Repeat One keeps the current track looping; only Repeat All
+    // wraps from the final queue item back to the first.
+    if (repeatMode === 'one' || autoCrossfadeRunning || !audioSettings.crossfadeSeconds || ui.audio.paused || ui.audio.ended || !Number.isFinite(ui.audio.duration) || !currentTrackId) return;
     const totalDuration = ui.audio.duration;
     const fadeDuration = Math.min(audioSettings.crossfadeSeconds, Math.max(0.5, totalDuration * 0.35));
     const remaining = totalDuration - ui.audio.currentTime;
@@ -4884,9 +4896,13 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   });
   ui.queueList.addEventListener('click', event => { const button = event.target.closest('[data-remove-queue]'); if (!button) return; event.stopPropagation(); const id = button.dataset.removeQueue; const base = playbackQueueIds.length || queueExplicit ? playbackQueueIds.slice() : getPlaybackQueue().map(track => track.id); setPlaybackQueue(base.filter(item => item !== id)); renderAll(); });
 
+  // Refresh the shared bottom player when an internet stream starts or stops.
+  window.addEventListener('foxsmusic:internet-stream-changed', () => { renderNowPlaying(); renderControls(); });
+
   // Playback controls
   ui.playBtn.addEventListener('click', togglePlay);
   $('#previousBtn').addEventListener('click', () => {
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.playAdjacentStream(-1); return; }
     if (ui.audio.currentTime > 3) { ui.audio.currentTime = 0; return; }
     selectAdjacent(-1);
   });
@@ -4903,16 +4919,21 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   });
   ui.volumeBar.addEventListener('input', () => {
     const value = Number(ui.volumeBar.value) / 100;
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.setStreamVolume(value); return; }
     audioDecks.forEach(deck => { deck.volume = value; deck.muted = value === 0; });
     if (value > 0) previousVolume = value;
     persistSettings(); renderControls();
   });
   ui.muteBtn.addEventListener('click', () => {
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.toggleStreamMute(); return; }
     if (ui.audio.muted || ui.audio.volume === 0) { audioDecks.forEach(deck => { deck.muted = false; deck.volume = previousVolume || .76; }); }
     else { previousVolume = ui.audio.volume; audioDecks.forEach(deck => { deck.muted = true; }); }
     persistSettings(); renderControls();
   });
-  ui.nowFavoriteBtn.addEventListener('click', () => { if (currentTrackId) toggleFavorite(currentTrackId); else toast('Сначала выбери трек.'); });
+  ui.nowFavoriteBtn.addEventListener('click', () => {
+    if (typeof window !== 'undefined' && window.foxOnline?.isActive?.()) { window.foxOnline.stopStream(); return; }
+    if (currentTrackId) toggleFavorite(currentTrackId); else toast('Сначала выбери трек.');
+  });
   $('#changeCoverBtn').addEventListener('click', () => { if (!currentTrackId) { toast('Сначала выбери трек, чтобы сменить обложку.'); return; } ui.coverInput.click(); });
   $('#toggleQueueBtn').addEventListener('click', () => {
     document.body.classList.toggle('queue-hidden');
@@ -4968,6 +4989,64 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
   }));
   $$('.studio-preset').forEach(button => button.addEventListener('click', () => applyPreset(button.dataset.preset)));
   $('#crossfadeSlider').addEventListener('input', event => { audioSettings.crossfadeSeconds = clamp(Number(event.target.value) || 0, 0, 8); const output = $('#crossfadeValue'); if (output) output.textContent = crossfadeSecondsLabel(audioSettings.crossfadeSeconds); setRangeFill(event.target); persistSettings(); });
+  // FOXSMUSIC-CROSSFADE-145: robust document-level pointer tracking.
+  // Track pointer movement on document rather than the native range element:
+  // Electron may retarget pointermove outside the slider during a drag.
+  {
+    const slider = $('#crossfadeSlider');
+    if (slider && slider.dataset.foxCrossfadePointerBound !== '1') {
+      let activePointerId = null;
+      const setValueFromPointer = clientX => {
+        const rect = slider.getBoundingClientRect();
+        if (!rect || !Number.isFinite(rect.width) || rect.width <= 0) return;
+        const min = slider.min === '' ? 0 : Number(slider.min);
+        const max = slider.max === '' ? 8 : Number(slider.max);
+        const step = Number(slider.step) > 0 ? Number(slider.step) : 1;
+        const inset = Math.min(11, rect.width / 2);
+        const usableWidth = Math.max(1, rect.width - inset * 2);
+        const ratio = clamp((clientX - rect.left - inset) / usableWidth, 0, 1);
+        const raw = min + ratio * (max - min);
+        const snapped = min + Math.round((raw - min) / step) * step;
+        const next = clamp(Number(snapped.toFixed(3)), min, max);
+        if (Number(slider.value) === next) return;
+        slider.value = String(next);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+
+      const onPointerDown = event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (event.isPrimary === false) return;
+        activePointerId = event.pointerId;
+        try { slider.focus({ preventScroll: true }); } catch (_) { slider.focus(); }
+        setValueFromPointer(event.clientX);
+      };
+      const onPointerMove = event => {
+        if (activePointerId === null || activePointerId !== event.pointerId) return;
+        if (event.cancelable) event.preventDefault();
+        setValueFromPointer(event.clientX);
+      };
+      const finishPointer = event => {
+        if (activePointerId === null || (event.pointerId !== undefined && activePointerId !== event.pointerId)) return;
+        activePointerId = null;
+        slider.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      const cancelPointer = () => {
+        if (activePointerId === null) return;
+        activePointerId = null;
+        slider.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+
+      slider.addEventListener('pointerdown', onPointerDown);
+      // Capture phase keeps receiving movement even when the pointer leaves the
+      // slider's bounds or Electron changes the event target during a drag.
+      document.addEventListener('pointermove', onPointerMove, true);
+      document.addEventListener('pointerup', finishPointer, true);
+      document.addEventListener('pointercancel', finishPointer, true);
+      window.addEventListener('blur', cancelPointer);
+      slider.dataset.foxCrossfadePointerBound = '1';
+    }
+  }
+
   $('#normalizeToggle').addEventListener('change', event => { audioSettings.normalizeEnabled = !!event.target.checked; applyAudioSettings(); toast(audioSettings.normalizeEnabled ? 'Выравнивание громкости включено' : 'Выравнивание громкости выключено', 'success'); });
   $('#saveEqPresetBtn').addEventListener('click', saveCustomEqPreset);
   renderCustomEqPresets();
@@ -5022,12 +5101,17 @@ ${(group.duplicatePaths || []).slice(0, 5).map(escapeHTML).join('\n')}${(group.d
       ui.audio.play().catch(() => {});
       return;
     }
-    if (repeatMode === 'all') {
+
+    const queue = getPlaybackOrder();
+    const currentIndex = queue.findIndex(track => track.id === currentTrackId);
+    const hasNextTrack = currentIndex >= 0 && currentIndex + 1 < queue.length;
+    // Repeat Off still plays the rest of the current queue. It only stops
+    // after the final item; Repeat All additionally wraps to the first item.
+    if (hasNextTrack || repeatMode === 'all') {
       selectAdjacent(1);
       return;
     }
-    // Repeat Off: stop at the end of this track. Do not advance the playlist,
-    // even if there are more tracks or Crossfade is configured.
+
     crossfadeGeneration++;
     audioDecks.forEach(deck => { try { deck.pause(); } catch (_) {} });
     try { ui.audio.currentTime = 0; } catch (_) {}

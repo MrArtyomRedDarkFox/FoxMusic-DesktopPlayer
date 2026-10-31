@@ -2259,3 +2259,188 @@ body[data-profile-mode="birthday"] .fire-spark-f { animation-delay: -.25s; anima
   body[data-profile-mode="birthday"]:not(.effects-off) .birthday-center-warmth,
   body[data-profile-mode="birthday"]:not(.effects-off) .birthday-cake { animation-iteration-count: infinite !important; }
 }
+
+
+/* FoxsMusic crossfade hit-area hotfix 1.4.2 */
+/* Larger hit area: the visible rail remains slim, while the control is easy to grab. */
+#crossfadeSlider {
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: -3px 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+#crossfadeSlider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red) var(--range-fill, 37.5%), #302329 var(--range-fill, 37.5%), #302329 100%);
+}
+#crossfadeSlider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border: 2px solid var(--red-bright);
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), .38);
+}
+#crossfadeSlider::-moz-range-track {
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #302329;
+}
+#crossfadeSlider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--red);
+}
+#crossfadeSlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--red-bright);
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), .38);
+}
+#crossfadeSlider:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 5px;
+}
+
+
+/* FOXSMUSIC-CROSSFADE-144: pointer-driven range control */
+.sound-studio .studio-control.transition-control {
+  position: relative;
+  z-index: 8;
+  pointer-events: auto !important;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider {
+  position: relative;
+  z-index: 9;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 36px !important;
+  margin: 5px 0 2px;
+  padding: 0;
+  cursor: ew-resize;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-webkit-slider-runnable-track {
+  height: 7px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red) var(--range-fill, 37.5%), #302329 var(--range-fill, 37.5%), #302329 100%);
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-webkit-slider-thumb {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-top: -6.5px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .13), 0 0 13px rgba(var(--accent-rgb), .4);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-track {
+  height: 7px;
+  border: 0;
+  border-radius: 999px;
+  background: #302329;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-progress {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--red);
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .13), 0 0 13px rgba(var(--accent-rgb), .4);
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 4px;
+}
+
+
+/* FOXSMUSIC-CROSSFADE-145: larger hit target with document-tracked pointer drag. */
+.sound-studio .studio-control.transition-control {
+  position: relative;
+  z-index: 12;
+  pointer-events: auto !important;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider {
+  position: relative;
+  z-index: 13;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px !important;
+  margin: 1px 0 0;
+  padding: 0;
+  cursor: ew-resize;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--red) 0%, var(--red) var(--range-fill, 37.5%), #302329 var(--range-fill, 37.5%), #302329 100%);
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-webkit-slider-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .14), 0 0 14px rgba(var(--accent-rgb), .42);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-track {
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: #302329;
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--red);
+}
+.sound-studio .studio-control.transition-control #crossfadeSlider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--red-bright);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .14), 0 0 14px rgba(var(--accent-rgb), .42);
+}

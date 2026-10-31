@@ -8,6 +8,7 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
+const { buildRadioSearchUrl, normalizeRadioStation, buildJamendoSearchUrl, normalizeJamendoTrack } = require('./internet-services.cjs');
 const { autoUpdater } = require('electron-updater');
 
 const APP_ID = 'com.artyomreddarkfox.foxsmusic';
@@ -834,6 +835,34 @@ ipcMain.handle('foxsmusic:reveal-in-folder', async (event, filePath) => {
   } catch (_) {
     return { ok: false, reason: 'not-found' };
   }
+});
+
+async function fetchInternetJson(url, serviceName) {
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/json', 'User-Agent': 'FoxsMusic Desktop/1.4.0' },
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!response.ok) throw new Error(serviceName + ' returned HTTP ' + response.status);
+  return response.json();
+}
+
+ipcMain.handle('foxsmusic:search-radio-stations', async (event, query = '', field = 'name') => {
+  assertTrustedSender(event);
+  const rows = await fetchInternetJson(buildRadioSearchUrl(query, field), 'Radio Browser');
+  return (Array.isArray(rows) ? rows : []).map(normalizeRadioStation).filter(Boolean);
+});
+
+ipcMain.handle('foxsmusic:count-radio-station-click', async (event, stationId) => {
+  assertTrustedSender(event);
+  if (typeof stationId !== 'string' || !/^[a-f0-9-]{16,64}$/i.test(stationId)) return { ok: false };
+  await fetchInternetJson('https://de1.api.radio-browser.info/json/url/' + encodeURIComponent(stationId), 'Radio Browser');
+  return { ok: true };
+});
+
+ipcMain.handle('foxsmusic:search-online-music', async (event, query = '', clientId = '', field = 'track') => {
+  assertTrustedSender(event);
+  const rows = await fetchInternetJson(buildJamendoSearchUrl(clientId, query, field), 'Jamendo');
+  return (Array.isArray(rows?.results) ? rows.results : []).map(normalizeJamendoTrack).filter(Boolean);
 });
 
 function createWindow() {

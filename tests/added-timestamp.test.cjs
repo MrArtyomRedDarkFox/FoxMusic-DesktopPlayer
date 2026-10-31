@@ -27,7 +27,16 @@ const formatted = context.api.formatTrackTimestamp(stamp, 'ru');
 assert.match(formatted, /31/);
 assert.match(formatted, /10/);
 assert.match(formatted, /2026/);
-assert.match(formatted, /14:25/);
+const expectedLocalTime = new Intl.DateTimeFormat('ru-RU', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23'
+}).format(new Date(stamp));
+
+assert.ok(
+  formatted.includes(expectedLocalTime),
+  `Expected local time ${expectedLocalTime}, received ${formatted}`
+);
 assert.match(context.api.formatTrackTimestamp(stamp, 'en'), /10\/31\/2026/);
 assert.match(context.api.formatTrackTimestamp(stamp, 'de'), /31\.10\.2026/);
 assert.equal(context.api.formatTrackTimestamp(0, 'ru'), '—');

@@ -1,0 +1,97 @@
+/* FoxsMusic Desktop — internet radio and licensed online music catalogue */
+body.internet-active .hero-card,
+body.internet-active .library-section,
+body.internet-active .queue-panel,
+body.internet-active .searchbox { display: none !important; }
+body.internet-active .app-shell { grid-template-columns: 264px minmax(370px,1fr); }
+body.internet-active .main-content { padding-bottom: 32px; }
+body.internet-active .content-heading { margin-bottom: 20px; }
+body.internet-active .content-heading .heading-actions { display: none; }
+
+.internet-workspace { display: grid; gap: 18px; min-width: 0; padding-bottom: 24px; }
+.internet-workspace[hidden] { display: none !important; }
+.internet-player[hidden] { display: none !important; }
+.internet-page { display: none; min-width: 0; animation: internet-page-in .24s ease both; }
+.internet-page.is-active { display: block; }
+@keyframes internet-page-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.internet-hero { position: relative; overflow: hidden; padding: 24px; border: 1px solid rgba(var(--accent-rgb),.34); border-radius: 18px; background: radial-gradient(ellipse at 90% 0%,rgba(var(--accent-rgb),.19),transparent 42%),linear-gradient(125deg,rgba(24,10,15,.97),rgba(9,7,10,.96)); box-shadow: inset 0 1px rgba(255,255,255,.035),0 16px 45px rgba(0,0,0,.18); }
+.internet-hero:after { content: ""; position: absolute; right: -55px; bottom: -115px; width: 310px; height: 310px; border: 1px solid rgba(var(--accent-rgb),.15); border-radius: 50%; box-shadow: 0 0 0 28px rgba(var(--accent-rgb),.025),0 0 0 58px rgba(var(--accent-rgb),.018); pointer-events: none; }
+.internet-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--red-bright); font-size: 10px; font-weight: 800; letter-spacing: 2.2px; text-transform: uppercase; }
+.internet-hero h2 { position: relative; z-index: 1; margin: 12px 0 7px; font-family: var(--display); font-size: clamp(27px,3vw,38px); letter-spacing: -1.2px; }
+.internet-hero p { position: relative; z-index: 1; max-width: 680px; color: var(--muted); line-height: 1.65; font-size: 13px; margin: 0; }
+.internet-search-row { display: flex; gap: 9px; margin-top: 20px; max-width: 760px; position: relative; z-index: 1; }
+.internet-search-row input,.internet-field { width: 100%; min-width: 0; height: 46px; padding: 0 14px; color: var(--text); background: rgba(7,6,8,.78); border: 1px solid rgba(var(--accent-rgb),.3); border-radius: 10px; outline: none; }
+.internet-search-row .internet-select { flex: 0 0 156px; }
+.internet-select { height: 46px; min-width: 0; padding: 0 12px; color: var(--text); background: rgba(7,6,8,.78); border: 1px solid rgba(var(--accent-rgb),.3); border-radius: 10px; outline: none; }
+.internet-select:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.09); }
+.internet-search-row input:focus,.internet-field:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.09); }
+.internet-search-row input::placeholder,.internet-field::placeholder { color: var(--muted-2); }
+.internet-action { min-height: 42px; padding: 0 16px; border: 1px solid rgba(var(--accent-rgb),.48); border-radius: 10px; color: #fff; font-size: 12px; font-weight: 800; white-space: nowrap; background: linear-gradient(120deg,var(--red-soft),var(--red)); box-shadow: 0 8px 24px rgba(var(--accent-rgb),.13); transition: transform .18s,filter .18s; }
+.internet-action:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.internet-action.secondary { background: rgba(var(--accent-rgb),.07); color: var(--text); box-shadow: none; }
+.internet-action:disabled { opacity: .45; cursor: wait; transform: none; }
+.internet-quick-tags,.internet-filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; position: relative; z-index: 1; }
+.internet-chip { border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.035); color: var(--muted); padding: 8px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; transition: .18s; }
+.internet-chip:hover,.internet-chip.is-active { color: var(--text); border-color: rgba(var(--accent-rgb),.55); background: rgba(var(--accent-rgb),.13); }
+.internet-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 21px 0 12px; }
+.internet-toolbar h3 { margin: 0; font-size: 15px; }
+.internet-muted { color: var(--muted); font-size: 11px; }
+.internet-status { min-height: 20px; margin: 12px 1px; color: var(--muted); font-size: 12px; }
+.internet-status.is-error { color: #ff7382; }
+.internet-results { display: grid; grid-template-columns: repeat(auto-fill,minmax(265px,1fr)); gap: 11px; }
+.internet-card { display: grid; grid-template-columns: 54px minmax(0,1fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 12px; border: 1px solid rgba(255,255,255,.085); border-radius: 13px; background: linear-gradient(125deg,rgba(21,14,18,.93),rgba(11,9,12,.94)); transition: border-color .18s,transform .18s,background .18s; }
+.internet-card:hover { border-color: rgba(var(--accent-rgb),.4); transform: translateY(-2px); background: linear-gradient(125deg,rgba(35,13,19,.96),rgba(12,9,12,.96)); }
+.internet-art { width: 54px; height: 54px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; color: var(--red-bright); border: 1px solid rgba(var(--accent-rgb),.2); background: radial-gradient(circle,rgba(var(--accent-rgb),.2),rgba(15,9,13,.95)); }
+.internet-art img { width: 100%; height: 100%; object-fit: cover; }
+.internet-art svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.internet-card-copy { min-width: 0; }
+.internet-card-copy strong { display: block; overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.internet-card-copy small { display: block; overflow: hidden; margin-top: 5px; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.internet-card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.internet-meta-pill { padding: 3px 6px; border-radius: 5px; color: var(--muted); background: rgba(255,255,255,.045); font-size: 9px; }
+.internet-card-actions { display: flex; align-items: center; gap: 5px; }
+.internet-icon-action { width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted); background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); border-radius: 9px; }
+.internet-icon-action:hover,.internet-icon-action.is-saved { color: var(--red-bright); border-color: rgba(var(--accent-rgb),.4); background: rgba(var(--accent-rgb),.1); }
+.internet-icon-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.internet-player { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(145px,210px); align-items: center; gap: 16px; padding: 13px 16px; margin-top: 14px; border: 1px solid rgba(var(--accent-rgb),.42); border-radius: 13px; background: linear-gradient(110deg,rgba(36,9,17,.97),rgba(13,9,13,.98)); box-shadow: 0 12px 36px rgba(var(--accent-rgb),.08); }
+.internet-player-copy { min-width: 0; }
+.internet-player-copy strong { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.internet-player-copy small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+.internet-player-actions { display: flex; gap: 7px; }
+.internet-player-volume { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+.internet-player-volume input { width: 100%; accent-color: var(--red); }
+.internet-setup-card { max-width: 760px; padding: 16px; border: 1px solid rgba(var(--accent-rgb),.28); border-radius: 13px; background: rgba(17,11,14,.8); }
+.internet-setup-card p { margin: 7px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.internet-setup-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 9px; }
+.internet-link { color: var(--red-bright); text-decoration: none; }
+.internet-link:hover { text-decoration: underline; }
+.internet-empty { grid-column: 1/-1; padding: 28px 20px; text-align: center; color: var(--muted); border: 1px dashed rgba(var(--accent-rgb),.23); border-radius: 14px; background: rgba(12,9,11,.55); font-size: 12px; line-height: 1.6; }
+.internet-empty strong { display: block; margin-bottom: 5px; color: var(--text); font-size: 14px; }
+.internet-custom-station { display: grid; grid-template-columns: minmax(180px,.8fr) minmax(240px,1.2fr) auto; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.07); }
+.internet-attribution { color: var(--muted-2); font-size: 10px; line-height: 1.55; margin-top: 18px; }
+.internet-nav-item { margin-top: 2px; }
+.internet-nav-item .internet-nav-symbol { width: 18px; height: 18px; display: grid; place-items: center; }
+.internet-nav-item .internet-nav-symbol svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.internet-nav-item.active { border-color: rgba(var(--accent-rgb),.42); background: linear-gradient(110deg,rgba(var(--accent-rgb),.2),rgba(var(--accent-rgb),.06)); color: var(--text); box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb),.08); }
+@media (max-width: 1280px) { body.internet-active .app-shell { grid-template-columns: 230px minmax(340px,1fr); } }
+@media (max-width: 1100px) { .internet-player { grid-template-columns: minmax(0,1fr) auto; } .internet-player-volume { grid-column: 1/-1; } }
+@media (max-width: 1060px) { body.internet-active .app-shell { grid-template-columns: 205px minmax(300px,1fr); } }
+@media (max-width: 760px) { body.internet-active .app-shell { grid-template-columns: 62px minmax(0,1fr); } .internet-hero { padding: 18px; } .internet-search-row { flex-direction: column; } .internet-search-row .internet-action { min-height: 44px; } .internet-search-row .internet-select { flex: 1 1 auto; width: 100%; } .internet-results { grid-template-columns: 1fr; } .internet-custom-station,.internet-setup-row { grid-template-columns: 1fr; } .internet-player { grid-template-columns: 1fr; gap: 10px; } .internet-player-actions { justify-content: flex-start; } }
+
+
+/* Internet streams use FoxsMusic's original bottom player, never a duplicate mini-bar. */
+.internet-player { display: none !important; }
+body.internet-stream-active .player-bar .progress-row { display: none !important; }
+body.internet-stream-active .player-bar #shuffleBtn,
+body.internet-stream-active .player-bar #repeatBtn { display: none !important; }
+body.internet-stream-active .player-bar #nowFavoriteBtn { color: var(--red-bright); }
+body.internet-stream-active .player-bar #nowFavoriteBtn svg { width: 17px; height: 17px; }
+body.internet-stream-active .player-bar #nowCover { filter: saturate(.85); }
+body.internet-stream-active .player-bar .now-subline i { background: #21d69a; box-shadow: 0 0 8px rgba(33,214,154,.6); }
+body.internet-stream-active .player-bar #playBtn { border-color: var(--red-bright); box-shadow: 0 0 0 5px rgba(var(--accent-rgb),.08), 0 0 28px rgba(var(--accent-rgb),.3); }
+body.internet-stream-active .player-bar #previousBtn,
+body.internet-stream-active .player-bar #nextBtn { color: var(--red-bright); }
+body.internet-stream-active .player-bar #changeCoverBtn { pointer-events: none; }
+body.internet-stream-active .now-playing-progress { opacity: .25; pointer-events: none; }
+
+body.internet-stream-active .now-playing-progress { display: none !important; }

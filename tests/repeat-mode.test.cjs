@@ -36,14 +36,15 @@ assert.ok(audioDecks.every(deck => deck.loop === false), 'turning repeat off dis
 assert.equal(calls.persist, 3, 'each mode change is persisted');
 assert.equal(calls.render, 3, 'each mode change updates visible button state');
 
-assert.match(app, /function maybeStartAutoCrossfade\(\)\s*\{[\s\S]*?if \(repeatMode !== 'all' \|\| autoCrossfadeRunning/);
 const fadeSource = extract('  function maybeStartAutoCrossfade() {', '  function applyAudioSettings(');
-const fadeContext = { repeatMode: 'one' };
-vm.runInNewContext(`${fadeSource}; this.maybeStartAutoCrossfade = maybeStartAutoCrossfade;`, fadeContext);
-assert.doesNotThrow(() => fadeContext.maybeStartAutoCrossfade(), 'Repeat One exits auto-crossfade logic before looking up the queue');
-const repeatOffFadeContext = { repeatMode: 'off' };
-vm.runInNewContext(`${fadeSource}; this.maybeStartAutoCrossfade = maybeStartAutoCrossfade;`, repeatOffFadeContext);
-assert.doesNotThrow(() => repeatOffFadeContext.maybeStartAutoCrossfade(), 'Repeat Off also skips automatic crossfade so the track can stop at its natural end');
+assert.match(fadeSource, /if \(repeatMode === 'one' \|\| autoCrossfadeRunning/,
+  'Repeat One blocks crossfade while Repeat Off and Repeat All remain eligible');
+assert.match(fadeSource, /if \(nextIndex >= queue\.length\) \{\s*if \(repeatMode !== 'all'\) return;\s*nextIndex = 0;/,
+  'only Repeat All wraps the final queue item');
+assert.match(app, /const hasNextTrack = currentIndex >= 0 && currentIndex \+ 1 < queue\.length;/,
+  'natural end detects remaining items in the current playback order');
+assert.match(app, /if \(hasNextTrack \|\| repeatMode === 'all'\) \{\s*selectAdjacent\(1\);/,
+  'Repeat Off advances when another track remains');
 assert.match(app, /nextDeck\.loop = repeatMode === 'one';[\s\S]*?nextDeck\.src = source/);
 assert.match(app, /audioDecks\.forEach\(deck => \{ deck\.loop = repeatMode === 'one'; \}\);/);
-console.log('PASS: Repeat One, Repeat Off stop-at-end, and crossfade regression checks');
+console.log('PASS: Repeat One, Repeat Off sequential playback, Repeat All wrapping, and automatic crossfade checks');

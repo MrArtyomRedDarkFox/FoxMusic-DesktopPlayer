@@ -232,3 +232,22 @@ The library duplicate-record confirmation now includes an unchecked-by-default c
 ## Version 1.3.11 — animated skull, pentagram and levitating pumpkin
 
 The Halloween profile now layers a stylized crimson skull behind a separately glowing pentagram and a foreground pumpkin. The pumpkin gently floats vertically; four side eyes blink and independently shift their gaze. Existing floating candles, flickering flames, wind, bats, ghosts and embers remain in the scene. The in-app Visual Effects toggle disables the seasonal motion, and reduced-motion system settings are handled with slower continuous seasonal cycles.
+
+
+## Internet Radio and Online Music (1.4.0)
+
+- **Радио:** поиск интернет-станций через каталог Radio Browser. Избранное и собственные HTTP(S)-ссылки на потоки сохраняются локально на этом компьютере.
+- **Музыка онлайн:** поиск и потоковое воспроизведение независимых композиций из Jamendo. Для каждой установки нужен собственный бесплатный Client ID приложения Jamendo; введи его во вкладке «Онлайн». Он сохраняется локально в настройках приложения.
+- **Это не каталог Spotify:** для полного каталога Spotify нужна отдельная авторизация и интеграция Spotify. Jamendo — самостоятельный каталог независимой музыки. Подкасты и аудиокниги пока не входят в эту версию.
+- **Локализация:** новые экраны «Радио» и «Онлайн» поддерживают русский, английский и немецкий языки.
+- **Совместимость плееров:** интернет-поток использует отдельный аудиоплеер. Запуск локального трека останавливает интернет-поток; запуск радиостанции приостанавливает локальное воспроизведение.
+
+
+## Единая нижняя панель для радио и онлайн-музыки (1.4.1)
+
+- Интернет-радио и онлайн-треки управляются через оригинальную нижнюю панель FoxsMusic.
+- Центральная кнопка ставит поток на паузу и продолжает воспроизведение.
+- Кнопки «Назад» и «Вперёд» переключают радиостанции Radio Browser или онлайн-треки Jamendo.
+- Кнопка избранного временно превращается в «Стоп». Громкость и mute управляют интернет-потоком.
+- После остановки потока или выбора локального трека восстанавливается управление локальным плеером.
+- Поддерживается локализация RU/EN/DE.

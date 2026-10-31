@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('foxsmusic', Object.freeze({
   checkUpdates: () => ipcRenderer.invoke('foxsmusic:check-updates'),
   downloadUpdate: () => ipcRenderer.invoke('foxsmusic:download-update'),
   installUpdate: () => ipcRenderer.invoke('foxsmusic:install-update'),
+  searchRadioStations: (query, field) => ipcRenderer.invoke('foxsmusic:search-radio-stations', query, field),
+  countRadioStationClick: stationId => ipcRenderer.invoke('foxsmusic:count-radio-station-click', stationId),
+  searchOnlineMusic: (query, clientId, field) => ipcRenderer.invoke('foxsmusic:search-online-music', query, clientId, field),
   toggleWindowFullscreen: () => ipcRenderer.invoke('foxsmusic:toggle-window-fullscreen'),
   onUpdateStatus: callback => { const listener = (_event, payload) => callback(payload); ipcRenderer.on('foxsmusic:update-status', listener); return () => ipcRenderer.removeListener('foxsmusic:update-status', listener); }
 }));

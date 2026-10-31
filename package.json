@@ -1,6 +1,6 @@
 {
   "name": "foxsmusic-desktop",
-  "version": "1.3.26",
+  "version": "1.4.1",
   "description": "FoxsMusic Player Pro — F11 native fullscreen shortcut",
   "main": "main.cjs",
   "author": "ArtyomRedDarkFox",
@@ -19,13 +19,16 @@
     "test:shuffle-stop": "node tests/shuffle-stop.test.cjs",
     "test:fullscreen": "node tests/fullscreen-shortcut.test.cjs",
     "test:storage": "node tests/indexeddb-storage.test.cjs",
-    "test": "npm run test:shuffle-stop && npm run test:repeat && npm run test:hotkeys && npm run test:now-playing && npm run test:localization && npm run test:fullscreen && npm run test:storage && npm run test:backup-validation && npm run test:smart-playlists && npm run test:added-timestamp && npm run test:delete-buttons && npm run test:profile-appearance",
+    "test": "npm run test:shuffle-stop && npm run test:repeat && npm run test:hotkeys && npm run test:now-playing && npm run test:localization && npm run test:fullscreen && npm run test:storage && npm run test:backup-validation && npm run test:smart-playlists && npm run test:added-timestamp && npm run test:delete-buttons && npm run test:profile-appearance && npm run test:internet-services && npm run test:internet-player-controls && npm run test:crossfade",
     "test:smart-playlists": "node tests/smart-playlists.test.cjs",
     "test:localization": "node tests/localization-smoke.test.cjs",
     "test:backup-validation": "node tests/backup-validation.test.cjs",
     "test:added-timestamp": "node tests/added-timestamp.test.cjs",
     "test:delete-buttons": "node tests/delete-button-alignment.test.cjs",
-    "test:profile-appearance": "node tests/profile-appearance-features.test.cjs"
+    "test:profile-appearance": "node tests/profile-appearance-features.test.cjs",
+    "test:internet-services": "node --test tests/internet-services.test.cjs",
+    "test:internet-player-controls": "node --test tests/internet-player-controls.test.cjs",
+    "test:crossfade": "node --test tests/crossfade-controls.test.cjs"
   },
   "dependencies": {
     "music-metadata": "^12.3.2",
@@ -50,7 +53,10 @@
       "main.cjs",
       "assets/**/*",
       "README.md",
-      "preload.cjs"
+      "preload.cjs",
+      "online.js",
+      "online.css",
+      "internet-services.cjs"
     ],
     "win": {
       "icon": "assets/icon.ico",
@@ -103,13 +109,9 @@
       {
         "provider": "github",
         "owner": "MrArtyomRedDarkFox",
-        "repo": "FoxMusic-DesktopPlayer",
+        "repo": "FoxsMusic-Desktop",
         "releaseType": "release"
       }
     ]
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/MrArtyomRedDarkFox/FoxMusic-DesktopPlayer.git"
   }
 }
