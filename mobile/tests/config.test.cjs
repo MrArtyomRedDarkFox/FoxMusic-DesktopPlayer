@@ -212,3 +212,19 @@ test('season themes change the root background while custom background colors re
   assert.match(appSource, /birthday: \{ accent: '#D59AD6', background: '#100B14'/);
   assert.match(appSource, /const appBackgroundColor = seasonTheme && profile\.backgroundColor === DEFAULT_PROFILE\.backgroundColor/);
 });
+
+test('player track metadata reserves stable space when switching between short and long titles', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /playerTrackInfo: \{[\s\S]*?minHeight: 84,[\s\S]*?\}/);
+  assert.match(appSource, /playerTrackTitle: \{[\s\S]*?height: 56,[\s\S]*?lineHeight: 27,[\s\S]*?includeFontPadding: false,[\s\S]*?\}/);
+  assert.match(appSource, /playerTrackArtist: \{[\s\S]*?height: 18,[\s\S]*?lineHeight: 16,[\s\S]*?includeFontPadding: false,[\s\S]*?\}/);
+  assert.equal((appSource.match(/playerHeartText:/g) || []).length, 1, 'playerHeartText style must be declared only once');
+});
+
+test('player queue preview keeps a fixed-height area and stable track identity keys', () => {
+  const appSource = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
+  assert.match(appSource, /const queuePreviewTracks = queueTracks\.slice\(/);
+  assert.match(appSource, /queuePreview: \{ minHeight: 445 \}/);
+  assert.match(appSource, /<View style=\{styles\.queuePreview\}>[\s\S]*?queuePreviewTracks\.map/);
+  assert.match(appSource, /<TrackRow\s+key=\{track\.id\}/);
+});

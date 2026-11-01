@@ -410,6 +410,12 @@ function AppContent() {
   const currentTrack = tracks.find(track => track.id === currentTrackId) || null;
   const queueTracks = queueIds.map(id => tracks.find(track => track.id === id)).filter(Boolean);
   const queueCurrentIndex = currentTrackId ? queueIds.indexOf(currentTrackId) : -1;
+  // Keep a stable preview window so advancing near the end of the queue
+  // does not collapse the player ScrollView and move its scroll position.
+  const queuePreviewTracks = queueTracks.slice(
+    Math.max(0, playback.currentIndex),
+    Math.max(0, playback.currentIndex) + 5,
+  );
   const playlistDetail = playlists.find(item => item.id === selectedPlaylistId) || null;
   const seasonTheme = SEASON_THEMES[profile.season] || null;
   const accentColor = seasonTheme?.accent || profile.accentColor || C.red;
@@ -1397,9 +1403,23 @@ async function importMusicFolder() {
                     </View>
                   </View>
                   <View style={styles.queueHeader}><Text style={styles.eyebrow}>{t.queue}</Text><Text style={styles.queueCount}>{queueTracks.length}</Text></View>
-                  {queueTracks.slice(Math.max(0, playback.currentIndex), Math.max(0, playback.currentIndex) + 5).map((track, index) => (
-                    <TrackRow key={track.id} track={track} index={index} active={currentTrackId === track.id} language={language} playCount={Number(playStats[track.id]?.count) || 0} accentColor={accentColor} panelBackground={panelBackground} onPlay={() => playTrack(track, queueIds)} onFavorite={() => toggleFavorite(track.id)} onAdd={() => openAddToPlaylist(track.id)} />
-                  ))}
+                  <View style={styles.queuePreview}>
+                    {queuePreviewTracks.map((track, index) => (
+                      <TrackRow
+                        key={track.id}
+                        track={track}
+                        index={index}
+                        active={currentTrackId === track.id}
+                        language={language}
+                        playCount={Number(playStats[track.id]?.count) || 0}
+                        accentColor={accentColor}
+                        panelBackground={panelBackground}
+                        onPlay={() => playTrack(track, queueIds)}
+                        onFavorite={() => toggleFavorite(track.id)}
+                        onAdd={() => openAddToPlaylist(track.id)}
+                      />
+                    ))}
+                  </View>
                 </>
               ) : (
                 <View style={styles.playerEmpty}>
@@ -1763,9 +1783,31 @@ const styles = StyleSheet.create({
   playerHeaderLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   playerHeaderDot: { color: C.green, fontSize: 10 },
   playerArtworkFrame: { alignItems: 'center', paddingVertical: 5, marginBottom: 23 },
-  playerTrackInfo: { alignItems: 'center', paddingHorizontal: 12, position: 'relative' },
-  playerTrackTitle: { color: C.text, fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: -0.4 },
-  playerTrackArtist: { color: C.muted, fontSize: 12, marginTop: 7 },
+  playerTrackInfo: {
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    position: 'relative',
+    minHeight: 84,
+  },
+  playerTrackTitle: {
+    color: C.text,
+    fontSize: 22,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: -0.4,
+    width: '100%',
+    height: 56,
+    lineHeight: 27,
+    includeFontPadding: false,
+  },
+  playerTrackArtist: {
+    color: C.muted,
+    fontSize: 12,
+    marginTop: 7,
+    height: 18,
+    lineHeight: 16,
+    includeFontPadding: false,
+  },
   playerHeart: { position: 'absolute', right: 0, top: 3, width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   playerHeartText: { color: C.muted, fontSize: 24 },
   seekBlock: { marginTop: 25, marginBottom: 17 },
@@ -1797,6 +1839,7 @@ const styles = StyleSheet.create({
   repeatHint: { color: C.subtle, fontSize: 9, textAlign: 'center', marginTop: 11, marginBottom: 27 },
   queueHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 17, marginBottom: 9 },
   queueCount: { color: C.subtle, fontSize: 10 },
+  queuePreview: { minHeight: 445 },
   playerEmpty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 20 },
   backButton: { alignSelf: 'flex-start', paddingVertical: 10, paddingRight: 20 },
   backButtonText: { color: C.red, fontWeight: '800', fontSize: 12 },
